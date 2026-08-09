@@ -5,7 +5,7 @@
 ## 1. Rotina Diária Esperada
 1. Quatro crons de ingestão leem o MySQL: OS (`fato_os`), itens de serviço (`fato_os_servico`), itens de pagamento (`fato_os_pagamento`) e comissões já calculadas (`fato_comissao`)
 2. A ingestão de serviço/pagamento reconcilia a soma dos itens contra o valor total da OS, sinalizando divergência
-3. Nos fechamentos de cada janela de tempo, os crons de cascata correspondentes (por família) somam o nível inferior já persistido e inserem a linha nova — nenhuma linha existente é alterada
+3. Nos fechamentos de cada janela de tempo, a cascata (por família × granularidade) soma o `*_diario` no intervalo e insere a linha nova — default insert-only; reprocessar com `--force` (ver `14-fase2-cascata.md`)
 4. O job de insights roda periodicamente, reconstruindo séries via o motor genérico (para as quatro famílias) e narrando apenas o que os modelos sinalizarem
 5. Perguntas de usuário são respondidas em tempo real pelo motor de consulta genérico — nenhuma ação manual necessária em operação normal
 
@@ -30,7 +30,7 @@ Em ambos os casos:
 | Divergência entre `fato_os` e soma de `fato_os_servico`/`fato_os_pagamento` | Item de serviço/pagamento faltando ou duplicado na origem | Verificar a extração da OS específica no MySQL antes de reprocessar |
 | Valores duplicados/incorretos em qualquer fato diário | Ingestão não idempotente ou reprocessamento indevido | Verificar chave primária composta e lógica de reexecução |
 | `insights` sempre vazio para um `entity_type` | Job de insights não está reconstruindo série pra esse tipo, ou limiar de detecção alto demais | Revisar `INSIGHT_DETECTION_THRESHOLD` e se o `entity_type` está incluído no job |
-| Semana/mês com dado incompleto | Cron diário não rodou para algum dia, em alguma família (falha, atraso na origem) | Reexecutar o cron diário daquela família para o dia específico que faltou; os crons de nível superior devem aguardar completude antes de rodar |
+| Semana/mês com dado incompleto | Ingestão diária não rodou para algum dia | Cascata aceita parcial (soma o que houver); para completar, reingerir o dia faltante e rodar cascata com `--force` no período |
 | Comissão divergente da origem | Job de ingestão aplicando alguma transformação indevida | Comissão deve ser cópia direta — nenhuma regra de cálculo deve existir neste pipeline (RF04) |
 | Custo de LLM acima do esperado | Modelo de detecção disparando com frequência maior que o previsto, ou perguntas gerando mais de 2 chamadas | Revisar limiar do modelo de detecção; auditar entendimento de pergunta e narração |
 

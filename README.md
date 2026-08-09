@@ -8,6 +8,7 @@ Faceta leva o nome do padrão de **busca facetada**: filtrar e agrupar o mesmo c
 
 - **Fase 0** — levantamento MySQL: feito  
 - **Fase 1** — ingestão diária + `dim_*` + `servico_id` no fato de serviço: feito  
+- **Fase 2** — cascata temporal (diário → semanal/mensal/…): feito  
 
 ## Rodar ingestão
 
@@ -17,4 +18,12 @@ PYTHONPATH=. .venv/bin/python -m faceta.ingest --data 2026-07-31
 PYTHONPATH=. .venv/bin/python -m faceta.ingest --only-dims
 ```
 
-Docs: `documentos/13-fase1-ingestao.md` · `documentos/10-dicionario-dados.md` · `documentos/11-roadmap.md`
+## Cascata (Fase 2)
+
+Soma sempre a partir do diário; completude parcial; `--force` para reprocessar:
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade semanal --periodo 2026-07-31
+```
+
+Docs: `documentos/14-fase2-cascata.md` · `documentos/13-fase1-ingestao.md` · `documentos/10-dicionario-dados.md` · `documentos/11-roadmap.md`

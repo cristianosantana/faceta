@@ -45,7 +45,9 @@ def postgres_connect():
 
 
 def apply_ddl(conn: psycopg.Connection) -> None:
-    ddl = (Path(__file__).parent / "sql" / "ddl_diario.sql").read_text(encoding="utf-8")
+    sql_dir = Path(__file__).parent / "sql"
+    ddl = (sql_dir / "ddl_diario.sql").read_text(encoding="utf-8")
+    ddl_cascata = (sql_dir / "ddl_cascata.sql").read_text(encoding="utf-8")
     with conn.cursor() as cur:
         # Migrações destrutivas de schema Fase 1 (reprocessar dias afetados)
         cur.execute(
@@ -99,6 +101,7 @@ def apply_ddl(conn: psycopg.Connection) -> None:
             cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.dim_familia_servico CASCADE")
 
         cur.execute(ddl)
+        cur.execute(ddl_cascata)
     conn.commit()
 
 

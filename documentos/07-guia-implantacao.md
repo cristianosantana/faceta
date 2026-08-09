@@ -29,10 +29,11 @@
 5. Cada execução aplica `DELETE` do dia + `INSERT` (idempotência) e, para serviço/pagamento, reconcilia a soma dos itens contra `valor_total` da OS correspondente, sinalizando divergência
 6. Frequência e schema de origem confirmados no levantamento (`12-levantamento-fase-0.md`): job diário processando o dia D−1 por recorte. **Paga** = `os.paga` + linha em `caixas`; **fechada** = itens ativos todos `fechado` em `os_servicos` XOR `os_produtos`; **cancelada** = `os.cancelada`; `paga=1` sem `caixas` = inconsistência (não cancelada). Comissão geral no pagamento; comissão do produtivo no fechamento de itens. `os.finalizada` não é critério analítico.
 
-## 5. Crons de Cascata (por família e granularidade, insert-only)
-Uma rotina por família × granularidade (semanal, mensal, semestral, anual), cada uma somando o nível imediatamente inferior já persistido da mesma família:
-1. Agendar cada cron com a frequência compatível: semanal só roda após os 7 dias estarem completos; mensal após as semanas do mês; e assim por diante
-2. Se um dia faltar em qualquer família, a recuperação é reexecutar o cron diário daquela família para o dia específico — os crons de nível superior daquela família aguardam completude antes de rodar
+## 5. Cascata por Tempo (por família e granularidade)
+CLI: `python -m faceta.cascata` (detalhe em `14-fase2-cascata.md`). Cada granularidade soma **somente** o `*_diario` da mesma família no intervalo do calendário (não encadeia semana→mês):
+1. Completude **parcial**: dias faltantes não bloqueiam; a agregação soma o que existir no intervalo
+2. Default **insert-only**: se o período (`data` = início) já tem linhas, pula; `--force` faz `DELETE` do período + `INSERT`
+3. Dia faltante na origem: reexecutar ingestão diária desse dia e, se o agregado já existia, cascata com `--force` no período afetado
 
 ## 6. Job de Insights (lote, periódico, separado dos crons de cascata)
 1. Para cada `entity_type` do contrato, reconstrói a série histórica usando o motor de consulta genérico (roteando para a família de fato correta, incluindo `fato_comissao`)

@@ -130,14 +130,15 @@ CREATE TABLE fato_os_pagamento_diario (
 `SUM(valor_atribuido)` em `fato_os_servico_diario`, agrupado por OS, deve bater com `valor_total` de `fato_os_diario` para a mesma OS — essa reconciliação é uma checagem de qualidade de dado na ingestão, não uma regra do banco. O mesmo vale para `fato_os_pagamento_diario`.
 
 ## 4. Camada 2 — Cascata por Tempo (cada família, independente)
-Mesmo padrão de antes, aplicado três vezes:
+Cada granularidade (`_semanal`, `_mensal`, `_semestral`, `_anual`) soma **sempre** o `*_diario` no intervalo do calendário — **não** encadeia semana→mês (pagamentos/eventos no fim do mês não devem distorcer a cadeia via semana). Quatro famílias, mesmo padrão:
 ```
-fato_os_semanal   ← soma de fato_os_diario da semana
-fato_os_servico_semanal ← soma de fato_os_servico_diario da semana
-fato_os_pagamento_semanal ← soma de fato_os_pagamento_diario da semana
-... mensal, semestral, anual, mesmo padrão para as três famílias
+fato_os_semanal        ← SUM(fato_os_diario) no intervalo da semana ISO
+fato_os_mensal         ← SUM(fato_os_diario) no mês civil
+fato_os_servico_*      ← idem a partir de fato_os_servico_diario
+fato_os_pagamento_*    ← idem a partir de fato_os_pagamento_diario
+fato_comissao_*        ← idem a partir de fato_comissao_diario
 ```
-Insert-only, sem merge, mesma lógica de backfill pontual em caso de dia faltante.
+Completude **parcial** (soma os dias presentes). Default **insert-only**; `--force` reinsere o período. Detalhe: `14-fase2-cascata.md`.
 
 ## 5. Camada 3 — Fato de Comissão (ingerido, não calculado)
 Diferente do que parecia inicialmente, comissão **não precisa ser calculada por este projeto** — já existem tabelas de comissão prontas no MySQL de origem. `fato_comissao` é só mais um alvo de ingestão, igual a `fato_os`:

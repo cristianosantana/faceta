@@ -13,8 +13,8 @@
 - **US06** Como engenheiro de dados, quero que toda ingestão seja idempotente, para poder reprocessar com segurança em caso de falha.
 
 ## Épico 2 — Cascata por Tempo (cada família, independente)
-- **US07** Como sistema, quero somar cada nível de tempo a partir do nível imediatamente inferior já persistido, para cada uma das quatro famílias de fato, sem recomputar do dado bruto a cada vez.
-- **US08** Como sistema, quero que cada linha de fato agregado seja escrita uma única vez e nunca alterada depois, para eliminar qualquer necessidade de merge entre crons concorrentes.
+- **US07** Como sistema, quero somar cada granularidade (`semanal`…`anual`) a partir do fato **diário** já persistido (intervalo de calendário), para cada uma das quatro famílias, sem recomputar do MySQL e sem encadear semana→mês.
+- **US08** Como sistema, quero que cada linha de fato agregado seja escrita uma única vez por padrão (insert-only) e só seja substituída com reprocessamento explícito (`--force`), para evitar merge entre execuções concorrentes.
 
 ## Épico 3 — Contrato como Allowlist e Roteador
 - **US09** Como analista de negócio, quero declarar em um contrato quais dimensões podem ser sujeito (`entity_type`), a qual família de fato cada uma pertence, e quais quebras/comparações são válidas, para controlar o que pode ser consultado sem alterar código.

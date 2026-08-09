@@ -20,8 +20,11 @@
 - **Como rodar:** `PYTHONPATH=. python -m faceta.ingest --data YYYY-MM-DD` · só dims: `--only-dims`
 
 ## Fase 2 — Cascata por Tempo
-- US07–US08 (Épico 2): crons de cascata semanal/mensal/semestral/anual, para as quatro famílias
-- **Critério de saída:** um período fechado completo (ex.: uma semana) materializado corretamente em todas as famílias, sem merge, sem sobrescrita
+- US07–US08 (Épico 2): cascata semanal/mensal/semestral/anual, para as quatro famílias — **implementado** (`faceta/cascata`, `documentos/14-fase2-cascata.md`)
+- **Decisões:** cada nível soma só o `*_diario` (não semana→mês); completude **parcial**; insert-only + `--force` — spec `docs/superpowers/specs/2026-08-09-fase-2-cascata-design.md`
+- DDL: `faceta/sql/ddl_cascata.sql` (aplicado via `apply_ddl`)
+- **Como rodar:** `PYTHONPATH=. python -m faceta.cascata --granularidade semanal --periodo YYYY-MM-DD` · `--force` reinsere o período
+- **Critério de saída:** período materializado nas quatro famílias; skip sem `--force`; totais = soma dos diários — **feito** para semana ISO `2026-07-27` (ref. `2026-07-31`)
 
 ## Fase 3 — Contrato e Motor de Consulta Genérico
 - US09–US14 (Épicos 3 e 4): contrato como allowlist, roteamento por família, agregação, comparações, ranking

@@ -59,7 +59,7 @@ Resumo — DDL completo em `05-arquitetura-software-sad.md`, seções 3, 4 e 5.
 | `fato_os_pagamento` | 1 linha por combinação (dimensões + forma)/dia | + `forma_pagamento_id` | `valor_pago` | Sim (uma OS pode ter mais de uma forma de pagamento) |
 | `fato_comissao` | 1 linha por comissionado/tipo/dia | `comissionado_id`, `comissao_tipo_id` | `valor_comissao` | Ingerido pronto; nomes iguais ao MySQL |
 
-Cada família tem 5 tabelas (uma por granularidade: `_diario`, `_semanal`, `_mensal`, `_semestral`, `_anual`), mesma estrutura de colunas em cascata.
+Cada família tem 5 tabelas (uma por granularidade: `_diario`, `_semanal`, `_mensal`, `_semestral`, `_anual`), mesma estrutura de colunas. Cascata: cada agregada soma o `_diario` no intervalo (não semana→mês); completude parcial; ver `14-fase2-cascata.md`.
 
 ## 3. Tabela de Cache de Insights (Postgres, criada por este projeto)
 | Coluna | Descrição |
