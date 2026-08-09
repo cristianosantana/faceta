@@ -163,14 +163,18 @@ Mapeamento confirmado no levantamento (`12-levantamento-fase-0.md`):
 ## 6. Camada 4 — Contrato (agora também roteia para a família de fato certa)
 ```yaml
 entity_types:
-  concessionaria: { fato: fato_os, coluna: concessionaria_id, quebras_validas: [departamento, vendedor, produtivo] }
-  departamento:   { fato: fato_os, coluna: departamento_id,   quebras_validas: [concessionaria, vendedor] }
-  vendedor:       { fato: fato_os, coluna: vendedor_id,       quebras_validas: [concessionaria, departamento] }
-  produtivo:      { fato: fato_os, coluna: produtivo_id,      quebras_validas: [concessionaria, departamento] }
-  familia_servico: { fato: fato_os_servico, coluna: familia_servico_id, quebras_validas: [concessionaria, departamento, servico] }
-  servico:        { fato: fato_os_servico, coluna: servico_id, quebras_validas: [concessionaria, departamento, familia_servico] }
-  forma_pagamento: { fato: fato_os_pagamento, coluna: forma_pagamento_id, quebras_validas: [concessionaria, departamento] }
+  concessionaria: { fato: fato_os, coluna: concessionaria_id, valor: valor_total, quebras_validas: [departamento, vendedor, produtivo, empresa] }
+  departamento:   { fato: fato_os, coluna: departamento_id,   valor: valor_total, quebras_validas: [concessionaria, vendedor, empresa] }
+  vendedor:       { fato: fato_os, coluna: vendedor_id,       valor: valor_total, quebras_validas: [concessionaria, departamento, empresa] }
+  produtivo:      { fato: fato_os, coluna: produtivo_id,      valor: valor_total, quebras_validas: [concessionaria, departamento] }
+  empresa:        { fato: fato_os, coluna: empresa_id,        valor: valor_total, quebras_validas: [concessionaria, departamento, vendedor] }
+  familia_servico: { fato: fato_os_servico, coluna: familia_servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, servico] }
+  servico:        { fato: fato_os_servico, coluna: servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, familia_servico] }
+  forma_pagamento: { fato: fato_os_pagamento, coluna: forma_pagamento_id, valor: valor_pago, quebras_validas: [concessionaria, departamento] }
+  comissionado:   { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, quebras_validas: [comissao_tipo] }
+  comissao_tipo:  { fato: fato_comissao, coluna: comissao_tipo_id, valor: valor_comissao, quebras_validas: [comissionado] }
 ```
+Arquivo vivo: `contrato.yaml`. CLI: `python -m faceta.query` — ver `15-fase3-consulta.md`.  
 Note que `servico` e `forma_pagamento` **não aparecem como quebra válida um do outro** — reflete a limitação da seção 2 (sem itemização cruzada na origem, essa combinação não existe).
 
 ## 7. Motor de Consulta Genérico

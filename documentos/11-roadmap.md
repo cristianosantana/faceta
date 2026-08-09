@@ -27,8 +27,9 @@
 - **Critério de saída:** período materializado nas quatro famílias; skip sem `--force`; totais = soma dos diários — **feito** para semana ISO `2026-07-27` (ref. `2026-07-31`)
 
 ## Fase 3 — Contrato e Motor de Consulta Genérico
-- US09–US14 (Épicos 3 e 4): contrato como allowlist, roteamento por família, agregação, comparações, ranking
-- **Critério de saída:** TC01–TC11 (`06-plano-testes-casos-teste.md`) passando contra dado real
+- US09–US14 (Épicos 3 e 4): contrato como allowlist, roteamento por família, agregação, comparações, ranking — **implementado** (`faceta/query`, `contrato.yaml`, `documentos/15-fase3-consulta.md`)
+- **Como rodar:** `PYTHONPATH=. python -m faceta.query --entity-type vendedor --granularidade semanal --periodo 2026-W31 --ranking`
+- **Critério de saída:** TC01–TC11 (`06-plano-testes-casos-teste.md`) — **feito** via `scripts/fase3_tc.py` (dado real)
 
 ## Fase 4 — Entendimento de Pergunta e Narração
 - US18–US20 (Épico 6): LLM traduz pergunta em parâmetros, motor genérico responde, LLM narra

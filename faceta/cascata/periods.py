@@ -8,6 +8,8 @@ GRANULARIDADES = ("semanal", "mensal", "semestral", "anual")
 
 def period_bounds(granularidade: str, ref: date) -> tuple[date, date]:
     """Retorna [início, fim) do período que contém `ref`."""
+    if granularidade == "diario":
+        return ref, ref + timedelta(days=1)
     if granularidade == "semanal":
         inicio = ref - timedelta(days=ref.weekday())  # segunda ISO
         return inicio, inicio + timedelta(days=7)
