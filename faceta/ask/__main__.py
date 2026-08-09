@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(resp.to_dict(), ensure_ascii=False, indent=2))
     else:
         print(f"llm_calls={resp.llm_calls}")
+        if resp.trace_id:
+            print(f"trace_id={resp.trace_id}")
         print(
             f"params: {resp.params.entity_type} / {resp.params.granularidade} / "
             f"{resp.params.periodo} ranking={resp.params.ranking}"

@@ -38,5 +38,6 @@ Em ambos os casos:
 - Latência das consultas do motor genérico por família e granularidade
 - Número de chamadas a LLM por pergunta respondida (deve ser sempre ≤ 2)
 - Número de chamadas a LLM no job de insights por execução
+- **Traces JSONL** em `logs/` (`17-tracing.md`): `python -m faceta.trace show <arquivo>`
 - Divergências de reconciliação (serviço/pagamento vs. total da OS) por execução de ingestão
 - Consultas rejeitadas pela allowlist do contrato, como sinal de dado novo não mapeado ou tentativa inválida (ex.: cruzamento servico × forma_pagamento)

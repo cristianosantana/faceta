@@ -42,4 +42,12 @@ PYTHONPATH=. .venv/bin/python scripts/fase3_tc.py
 PYTHONPATH=. .venv/bin/python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"
 ```
 
-Docs: `documentos/16-fase4-ask.md` · `documentos/15-fase3-consulta.md` · `documentos/14-fase2-cascata.md` · `documentos/11-roadmap.md`
+Docs: `documentos/17-tracing.md` · `documentos/16-fase4-ask.md` · `documentos/15-fase3-consulta.md` · `documentos/11-roadmap.md`
+
+## Tracing
+
+JSONL em `logs/` (gitignored):
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.trace show logs/2026-08-09/<trace_id>.jsonl
+```

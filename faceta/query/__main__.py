@@ -8,6 +8,7 @@ from faceta.db import postgres_connect
 from faceta.query.engine import consultar
 from faceta.query.errors import ConsultaRejeitada
 from faceta.query.maps import COMPARACOES, GRANULARIDADE_SUFIXO
+from faceta.trace import span, trace_run
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,18 +24,33 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        with postgres_connect() as pg:
-            result = consultar(
-                pg,
-                entity_type=args.entity_type,
-                granularidade=args.granularidade,
-                periodo=args.periodo,
-                entity_id=args.entity_id,
-                quebra=args.quebra,
-                quebra_valor=args.quebra_valor,
-                comparacao=args.comparacao,
-                ranking=args.ranking,
-            )
+        with trace_run(
+            "query",
+            entity_type=args.entity_type,
+            granularidade=args.granularidade,
+            periodo=args.periodo,
+            ranking=args.ranking,
+            comparacao=args.comparacao,
+        ):
+            with postgres_connect() as pg:
+                with span(
+                    "consultar",
+                    entity_type=args.entity_type,
+                    granularidade=args.granularidade,
+                    periodo=args.periodo,
+                    ranking=args.ranking,
+                ):
+                    result = consultar(
+                        pg,
+                        entity_type=args.entity_type,
+                        granularidade=args.granularidade,
+                        periodo=args.periodo,
+                        entity_id=args.entity_id,
+                        quebra=args.quebra,
+                        quebra_valor=args.quebra_valor,
+                        comparacao=args.comparacao,
+                        ranking=args.ranking,
+                    )
     except ConsultaRejeitada as e:
         print(f"REJEITADA: {e}", file=sys.stderr)
         return 2
