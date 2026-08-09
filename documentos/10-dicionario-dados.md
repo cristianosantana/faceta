@@ -1,19 +1,40 @@
 # Dicionário de Dados — Dimensões e Fatos
 
-## 1. Tabelas de Dimensão (MySQL, externas — este projeto não as cria)
+## 1. Tabelas de Dimensão
+
+### 1.1 Origem (MySQL `smart` — fonte de verdade)
 Validado no live (`documentos/12-levantamento-fase-0.md`). Nomes reais no MySQL são no plural; vendedor e produtivo compartilham `funcionarios` e se discriminam por `funcionario_tipos`.
 
 | Conceito Faceta | Tabela MySQL | Colunas usadas | Observação |
 |---|---|---|---|
 | `departamento` | `departamentos` | `id`, `nome` | — |
 | `concessionaria` | `concessionarias` | `id`, `nome` | CNPJ/razão social etc. não entram no fato |
-| `familia_servico` | `grupos_servicos` | `id`, `nome` | via `servicos.grupo_servico_id` |
-| `vendedor` | `funcionarios` | `id`, `nome` | `os.vendedor_id`; tipo via `funcionario_tipos` |
-| `produtivo` | `funcionarios` | `id`, `nome` | `os_servicos.produtivo_id`; tipo via `funcionario_tipos` |
+| `familia_servico` | `subgrupos_servicos` | `id`, `nome`, `grupo_servico_id` | **não** é `grupos_servicos`; via `servicos.subgrupo_servico_id` |
+| `familia_produto` | `subgrupos_produtos` | `id`, `nome`, `grupo_produto_id` | espelho para produtos |
+| `vendedor` / `produtivo` / `comissionado` | `funcionarios` | `id`, `nome` | IDs nos fatos apontam para cá |
 | `forma_pagamento` | `caixa_tipos` | `id`, `nome` | via `caixas.caixa_tipo_id` |
 | `empresa` | `empresas` | `id`, `nome` | — |
+| `comissao_tipo` | `comissao_tipos` | `id`, `nome` | via `comissoes.comissao_tipo_id` |
+| `servico` | `servicos` | `id`, `nome`, `subgrupo_servico_id` | serviço unitário; família = subgrupo |
 
-Cadeia de papel: `funcionarios` → `funcionario_cargos` → `cargos.funcionario_tipo_id` → `funcionario_tipos`.
+### 1.2 Snapshot no Postgres (ajuste Fase 1)
+Para ler fatos **sem** depender do MySQL em toda consulta, o ingest sincroniza cópias enxutas em `memoria_materializada`:
+
+| Postgres | Origem MySQL |
+|---|---|
+| `dim_departamento` | `departamentos` |
+| `dim_concessionaria` | `concessionarias` |
+| `dim_familia_servico` | `subgrupos_servicos` |
+| `dim_familia_produto` | `subgrupos_produtos` |
+| `dim_servico` | `servicos` (`familia_servico_id` ← `subgrupo_servico_id`) |
+| `dim_funcionario` | `funcionarios` |
+| `dim_forma_pagamento` | `caixa_tipos` |
+| `dim_empresa` | `empresas` |
+| `dim_comissao_tipo` | `comissao_tipos` |
+
+Sync: `TRUNCATE` + `INSERT` a cada ingest (ou `python -m faceta.ingest --only-dims`). A origem MySQL continua canônica; o snapshot pode atrasar até o próximo sync.
+
+Cadeia de papel (só na origem): `funcionarios` → `funcionario_cargos` → `cargos.funcionario_tipo_id` → `funcionario_tipos`.
 
 ### Estados da OS (critérios analíticos Faceta)
 Validado em `12-levantamento-fase-0.md` §5. **Não** usar `os.finalizada` como proxy.
@@ -33,9 +54,10 @@ Resumo — DDL completo em `05-arquitetura-software-sad.md`, seções 3, 4 e 5.
 | Família | Grão | Dimensões | Métrica | Multivalorada por OS? |
 |---|---|---|---|---|
 | `fato_os` | 1 linha por combinação única de dimensões/dia | concessionaria, departamento, vendedor, produtivo, empresa | `valor_total`, `quantidade_os` | Não |
-| `fato_os_servico` | 1 linha por combinação (dimensões + serviço)/dia | + `familia_servico_id` | `valor_atribuido`, `quantidade` | Sim (uma OS pode ter mais de um serviço) |
+| `fato_os_servico` | 1 linha por combinação (dims + família + **serviço**)/dia | + `familia_servico_id` (`subgrupos_servicos`), + `servico_id` | `valor_atribuido`, `quantidade` | Sim; grão serviço a serviço |
+
 | `fato_os_pagamento` | 1 linha por combinação (dimensões + forma)/dia | + `forma_pagamento_id` | `valor_pago` | Sim (uma OS pode ter mais de uma forma de pagamento) |
-| `fato_comissao` | 1 linha por beneficiário/tipo/dia | `beneficiario_tipo`, `beneficiario_id`, `tipo_comissao` | `valor_comissao` | Ingerido pronto, sem cálculo |
+| `fato_comissao` | 1 linha por comissionado/tipo/dia | `comissionado_id`, `comissao_tipo_id` | `valor_comissao` | Ingerido pronto; nomes iguais ao MySQL |
 
 Cada família tem 5 tabelas (uma por granularidade: `_diario`, `_semanal`, `_mensal`, `_semestral`, `_anual`), mesma estrutura de colunas em cascata.
 

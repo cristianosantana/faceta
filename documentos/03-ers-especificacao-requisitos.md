@@ -8,9 +8,9 @@ Sistema composto por seis camadas: (1) ingestão diária a partir do MySQL, sepa
 | ID | Descrição |
 |---|---|
 | RF01 | O sistema deve ingerir diariamente, do MySQL, um registro de fato por OS em `fato_os`, contendo `data`, `valor_total`, `quantidade_os` e as chaves de dimensão únicas (`concessionaria_id`, `departamento_id`, `vendedor_id`, `produtivo_id`, `empresa_id`) |
-| RF02 | O sistema deve ingerir diariamente, do MySQL, um registro por combinação (OS, serviço) em `fato_os_servico`, com `valor_atribuido` a cada serviço dentro da OS |
+| RF02 | O sistema deve ingerir diariamente, do MySQL, um registro por combinação (dims + serviço unitário) em `fato_os_servico`, com `servico_id`, `familia_servico_id` (= `subgrupos_servicos`) e `valor_atribuido` |
 | RF03 | O sistema deve ingerir diariamente, do MySQL, um registro por combinação (OS, forma de pagamento) em `fato_os_pagamento`, com `valor_pago` por cada forma dentro da OS |
-| RF04 | O sistema deve ingerir diariamente as comissões já calculadas nas tabelas de origem do MySQL em `fato_comissao`, sem recalculá-las |
+| RF04 | O sistema deve ingerir diariamente as comissões já calculadas nas tabelas de origem do MySQL em `fato_comissao` (`comissionado_id`, `comissao_tipo_id`), sem recalculá-las |
 | RF05 | O sistema deve validar, na ingestão, que `SUM(valor_atribuido)` em `fato_os_servico` e `SUM(valor_pago)` em `fato_os_pagamento` batem com `valor_total` da respectiva OS em `fato_os`, sinalizando divergência |
 | RF06 | O sistema deve calcular fatos agregados semanais, mensais, semestrais e anuais em cascata, para cada uma das quatro famílias de fato independentemente — cada nível somando o nível imediatamente inferior já persistido, preservando todas as colunas de dimensão da sua família |
 | RF07 | O sistema deve, na hora da pergunta, calcular a comparação com o período imediatamente anterior e com o mesmo período do ano anterior, executando a mesma consulta agregada duas vezes sobre a tabela de fato da granularidade e família corretas |

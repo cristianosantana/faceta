@@ -305,7 +305,7 @@ def main() -> int:
             map_rows = [
                 ["departamento", "departamentos", "id, nome", "—"],
                 ["concessionaria", "concessionarias", "id, nome", "extras ignorados na ingestão"],
-                ["familia_servico", "grupos_servicos", "id, nome", "via servicos.grupo_servico_id"],
+                ["familia_servico", "subgrupos_servicos", "id, nome", "via servicos.subgrupo_servico_id"],
                 ["vendedor", "funcionarios", "id, nome", "os.vendedor_id; tipo via funcionario_tipos"],
                 ["produtivo", "funcionarios", "id, nome", "os_servicos.produtivo_id; tipo via funcionario_tipos"],
                 ["funcionario_tipos", "funcionario_tipos", "id, nome", "cadeia funcionario_cargos → cargos.funcionario_tipo_id"],
@@ -695,9 +695,9 @@ EXISTS (
             sections.append(
                 "### Fórmula fixada para `fato_comissao.valor_comissao`\n\n"
                 f"`{formula_display}`\n\n"
-                "- `beneficiario_id` ← `comissoes.comissionado_id`\n"
-                "- `beneficiario_tipo` ← `funcionario_tipos.nome` via cargo ativo do comissionado\n"
-                "- `tipo_comissao` ← preferir `comissao_tipos.id` estável na ingestão; nome via dimensão/join\n"
+                "- `comissionado_id` ← `comissoes.comissionado_id`\n"
+                "- `comissao_tipo_id` ← `comissoes.comissao_tipo_id` "
+                "(sempre na origem; não derivar de `funcionario_tipos`/cargo)\n"
                 "- Data sugerida do fato: `DATE(comissoes.created_at)` "
                 "(geração no pagamento ou no fechamento do serviço do produtivo)\n"
             )

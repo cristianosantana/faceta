@@ -2,6 +2,18 @@
 
 > Gerado em `2026-08-09 17:24:56` por `scripts/fase0_levantamento.py`.
 
+## Correções pós-geração (Fase 1 — vigentes)
+
+> O corpo abaixo é o dump gerado pelo script. **Use esta seção como verdade atual** para mapeamento Faceta (atualizado após implementação da Fase 1).
+
+| Conceito | Correção |
+|---|---|
+| `familia_servico` | **`subgrupos_servicos`** via `servicos.subgrupo_servico_id` — **não** `grupos_servicos` |
+| `familia_produto` | **`subgrupos_produtos`** via `grupo_produto_id` |
+| `servico` | dimensão `dim_servico` + coluna `servico_id` em `fato_os_servico` (grão serviço a serviço) |
+| `fato_comissao` | colunas `comissionado_id` + `comissao_tipo_id` (iguais ao MySQL); **não** usar `beneficiario_*` nem derivar tipo de `funcionario_tipos`/cargo |
+| Snapshots Postgres | `dim_*` em `memoria_materializada` — ver `10-dicionario-dados.md` §1.2 e `13-fase1-ingestao.md` |
+
 ## 1. Conclusões (Fase 0)
 
 - **Schema cadastral:** validado no live.
@@ -597,16 +609,18 @@
 | --- | --- | --- | --- |
 | departamento | departamentos | id, nome | — |
 | concessionaria | concessionarias | id, nome | extras ignorados na ingestão |
-| familia_servico | grupos_servicos | id, nome | via servicos.grupo_servico_id |
+| familia_servico | **subgrupos_servicos** | id, nome | via servicos.**subgrupo_servico_id** (corrigido pós-Fase 1) |
+| familia_produto | subgrupos_produtos | id, nome | espelho produtos |
 | vendedor | funcionarios | id, nome | os.vendedor_id; tipo via funcionario_tipos |
 | produtivo | funcionarios | id, nome | os_servicos.produtivo_id; tipo via funcionario_tipos |
 | funcionario_tipos | funcionario_tipos | id, nome | cadeia funcionario_cargos → cargos.funcionario_tipo_id |
 | forma_pagamento | caixa_tipos | id, nome | via caixas.caixa_tipo_id |
 | empresa | empresas | id, nome | — |
+| servico | servicos | id, nome, subgrupo_servico_id | dimensão unitária |
 | fato_os | os | flags + FKs + valores | grão cabeçalho |
-| fato_os_servico | os_servicos | os_id, servico_id, produtivo_id, valores | — |
+| fato_os_servico | os_servicos | os_id, **servico_id**, produtivo_id, valores | + familia = subgrupo |
 | fato_os_pagamento | caixas | os_id, valor, caixa_tipo_id | caixas_pendentes ≠ prova de paga |
-| fato_comissao | comissoes | comissionado_id, comissao_tipo_id, valores | satélites comissao_* |
+| fato_comissao | comissoes | **comissionado_id**, **comissao_tipo_id**, valores | satélites comissao_* |
 
 ## 4. Amostras de dimensões e tipos
 
@@ -779,9 +793,9 @@ Critérios de negócio (Faceta — **não** usar `os.finalizada` como paga∩fec
 
 `valor_comissao = COALESCE(valor_dentro,0) + COALESCE(valor_fora,0) + COALESCE(valor_combo,0) + COALESCE(valor_compensado_permuta,0) + COALESCE(comissao_couro,0)`
 
-- `beneficiario_id` ← `comissoes.comissionado_id`
-- `beneficiario_tipo` ← `funcionario_tipos.nome` via cargo ativo do comissionado
-- `tipo_comissao` ← preferir `comissao_tipos.id` estável na ingestão; nome via dimensão/join
+- `comissionado_id` ← `comissoes.comissionado_id`
+- `comissao_tipo_id` ← `comissoes.comissao_tipo_id` (sempre na origem; **não** derivar de `funcionario_tipos`/cargo — concessionária/indicador não têm cargo)
+- Nome do tipo: join `dim_comissao_tipo` / `comissao_tipos`
 - Data sugerida do fato: `DATE(comissoes.created_at)` (geração no pagamento ou no fechamento do serviço do produtivo)
 
 ## 7. Frequência de leitura (recomendação)

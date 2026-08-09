@@ -32,14 +32,16 @@ Fechar os três pré-requisitos da Fase 0 (`documentos/11-roadmap.md`) antes de 
 |---|---|---|---|
 | `departamento` | `departamentos` | `id`, `nome` | plural no MySQL |
 | `concessionaria` | `concessionarias` | `id`, `nome` | campos extras (CNPJ etc.) não entram no fato |
-| `familia_servico` | `grupos_servicos` | `id`, `nome` | via `servicos.grupo_servico_id` |
+| `familia_servico` | `subgrupos_servicos` | `id`, `nome`, `grupo_servico_id` | via `servicos.subgrupo_servico_id` — **não** `grupos_servicos` |
+| `familia_produto` | `subgrupos_produtos` | `id`, `nome`, `grupo_produto_id` | espelho produtos |
 | `vendedor` | `funcionarios` | `id`, `nome` | `os.vendedor_id` → funcionário; papel via `funcionario_tipos` (cadeia `funcionario_cargos` → `cargos.funcionario_tipo_id`) |
 | `produtivo` | `funcionarios` | `id`, `nome` | `os_servicos.produtivo_id` → funcionário; mesmo cadastro, papel distinto em `funcionario_tipos` |
+| `servico` | `servicos` | `id`, `nome`, `subgrupo_servico_id` | entra no fato como `servico_id` |
 | `funcionario_tipos` | `funcionario_tipos` | `id`, `nome` | discrimina vendedor vs produtivo (e demais tipos); incluir no levantamento |
 | `forma_pagamento` | `caixa_tipos` | `id`, `nome` | via `caixas.caixa_tipo_id` |
 | `empresa` | `empresas` | `id`, `nome` | nível de faturamento / empresa |
 | cabeçalho OS | `os` | `id`, valores, FKs, flags de estado, datas | grão de `fato_os` |
-| itens serviço | `os_servicos` | `os_id`, `servico_id`, `produtivo_id`, valores, `fechado` | grão de `fato_os_servico` |
+| itens serviço | `os_servicos` | `os_id`, `servico_id`, `produtivo_id`, valores, `fechado` | grão de `fato_os_servico` (serviço a serviço) |
 | itens pagamento | `caixas` | `os_id`, `caixa_tipo_id`, `valor` | grão de `fato_os_pagamento`; `caixas_pendentes` = cobrança pendente, **não** prova de paga |
 | comissão | `comissoes` | `comissionado_id`, `comissao_tipo_id`, componentes de valor, `os_servico_id` / `os_produto_id` | satélites: `comissao_tipos`, `comissao_periodos`, `comissao_pagamentos` |
 
@@ -74,12 +76,11 @@ Checagens no live: divergência `os.fechada` vs fechada derivada; contagem de `p
 
 O script deve reportar, nos últimos 14 dias: contagem de OS fechadas sem nenhuma `comissoes` ligada (via `os_servicos`/`os_produtos`); e amostra de comissões de produtivo vs demais tipos.
 
-### 6.2 Mapeamento para `fato_comissao` (proposta a confirmar no relatório)
+### 6.2 Mapeamento para `fato_comissao`
 
-- `beneficiario_id` ← `comissoes.comissionado_id` (FK para `funcionarios`)
-- `beneficiario_tipo` ← resolvido via `funcionario_tipos` (vendedor / produtivo / outro), não inventado no Faceta
-- `tipo_comissao` ← `comissao_tipos` (`id` e/ou `nome`)
-- `valor_comissao` ← fórmula explícita a partir dos componentes presentes (`valor_dentro`, `valor_fora`, `valor_combo`, `valor_compensado_permuta`, `comissao_couro`); o script lista nullability e uso; o relatório **fixixa** a fórmula (sem TBD)
+- `comissionado_id` ← `comissoes.comissionado_id`
+- `comissao_tipo_id` ← `comissoes.comissao_tipo_id` (sempre presente com comissionado; **não** usar `funcionario_tipos`)
+- `valor_comissao` ← fórmula dos componentes (`valor_dentro`, `valor_fora`, `valor_combo`, `valor_compensado_permuta`, `comissao_couro`)
 
 Comissão é cópia/agregação de valores já calculados — sem reimplementar regra de negócio.
 

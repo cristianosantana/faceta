@@ -3,16 +3,16 @@
 > Vários itens abaixo dependem de decisões de infraestrutura ainda não fechadas na conversa — estão marcados como `[PENDENTE]`.
 
 ## 1. Pré-requisitos
-- Postgres (para as quatro famílias de fato — `fato_os`, `fato_os_servico`, `fato_os_pagamento`, `fato_comissao` — cada uma em cinco granularidades, mais a tabela `insights`)
-- Acesso de leitura ao **MySQL** de origem: OS, itens de serviço, itens de pagamento, comissões já calculadas, e tabelas cadastrais (departamento, concessionária, família de serviço, vendedor, produtivo, forma de pagamento, empresa)
+- **MySQL** de origem (leitura): OS, itens, comissões e cadastros — fonte de verdade das dimensões
+- **Postgres** destino: fatos `fato_*`, snapshots `dim_*` (id/nome) e depois `insights` — schema `memoria_materializada`
 - Agendador: nesta fase, **execução manual por hora** (CLI); Airflow/cron do SO ficam `[PENDENTE]` para produção — ver `11-roadmap.md`
 - Ambiente Python com **TensorFlow** para treino e inferência dos modelos de detecção de anomalia/previsão
 - Acesso a um provedor de LLM para entendimento de pergunta, narração da resposta e narração de insights (lote)
 
 ## 2. Estrutura de Banco de Dados
-1. Criar schema dedicado (sugestão: `memoria_materializada`)
-2. Criar `fato_os_diario`, `fato_os_servico_diario`, `fato_os_pagamento_diario`, `fato_comissao_diario` (scripts em `05-arquitetura-software-sad.md`, seções 3 e 5)
-3. Criar as tabelas de cascata (`_semanal`, `_mensal`, `_semestral`, `_anual`) para cada uma das quatro famílias, mesma estrutura de colunas
+1. Criar schema dedicado (`memoria_materializada`) via `python -m faceta.ingest` (aplica DDL)
+2. Fatos diários + `dim_*` (incl. `dim_servico`, `dim_familia_servico` ← `subgrupos_servicos`, `dim_familia_produto` ← `subgrupos_produtos`) + `ingest_reconciliacao` — DDL em `faceta/sql/ddl_diario.sql`; detalhe em `05-arquitetura-software-sad.md` e `10-dicionario-dados.md` §1.2
+3. Criar as tabelas de cascata (`_semanal`, `_mensal`, `_semestral`, `_anual`) para cada uma das quatro famílias na Fase 2 (mesma estrutura de colunas, incl. `servico_id` em `fato_os_servico_*`)
 4. Criar tabela `insights` (DER em `05-arquitetura-software-sad.md`, seção 2)
 5. Implementar o motor de consulta genérico (mapas dimensão→coluna e entity_type→família/tabela, seção 7) como camada de acesso compartilhada — todo código que lê fato deve passar por ele
 
@@ -23,10 +23,10 @@
 
 ## 4. Rotina de Ingestão Diária (quatro fontes)
 1. Cron que lê OS do MySQL e insere o cabeçalho em `fato_os_diario`
-2. Cron que lê itens de serviço por OS e insere em `fato_os_servico_diario`
+2. Cron que lê itens de serviço por OS e insere em `fato_os_servico_diario` (grão `servico_id` + `familia_servico_id` = subgrupo)
 3. Cron que lê itens de pagamento por OS e insere em `fato_os_pagamento_diario`
-4. Cron que lê as comissões já calculadas nas tabelas de origem e insere em `fato_comissao_diario`, sem transformação de regra
-5. Cada cron valida idempotência (chave primária composta evita duplicação em reprocessamento) e, para serviço/pagamento, reconcilia a soma dos itens contra `valor_total` da OS correspondente, sinalizando divergência
+4. Cron que lê as comissões já calculadas e insere em `fato_comissao_diario` (`comissionado_id`, `comissao_tipo_id`), sem transformação de regra
+5. Cada execução aplica `DELETE` do dia + `INSERT` (idempotência) e, para serviço/pagamento, reconcilia a soma dos itens contra `valor_total` da OS correspondente, sinalizando divergência
 6. Frequência e schema de origem confirmados no levantamento (`12-levantamento-fase-0.md`): job diário processando o dia D−1 por recorte. **Paga** = `os.paga` + linha em `caixas`; **fechada** = itens ativos todos `fechado` em `os_servicos` XOR `os_produtos`; **cancelada** = `os.cancelada`; `paga=1` sem `caixas` = inconsistência (não cancelada). Comissão geral no pagamento; comissão do produtivo no fechamento de itens. `os.finalizada` não é critério analítico.
 
 ## 5. Crons de Cascata (por família e granularidade, insert-only)

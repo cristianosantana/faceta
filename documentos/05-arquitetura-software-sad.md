@@ -3,9 +3,9 @@
 ## 0. Stack Tecnológico
 | Camada | Tecnologia | Papel |
 |---|---|---|
-| Origem dos dados | **MySQL** | OS, itens de serviço, itens de pagamento, comissões já calculadas, tabelas cadastrais |
-| Destino dos fatos | **Postgres** | `fato_os`, `fato_os_servico`, `fato_os_pagamento`, `fato_comissao`, cada um em 5 granularidades, mais `insights` |
-| Ingestão e cascata | **CLI / execução manual** (por hora nesta fase; Airflow/SO `[PENDENTE]` para produção) | Leitura do MySQL, gravação insert-only em Postgres, agregação em cascata por tempo |
+| Origem dos dados | **MySQL** | OS, itens, comissões, cadastros (fonte de verdade das dimensões) |
+| Destino dos fatos | **Postgres** | `fato_*` + snapshots `dim_*` (id/nome) + `insights` |
+| Ingestão e cascata | **CLI / execução manual** (por hora nesta fase; Airflow/SO `[PENDENTE]` para produção) | Lê MySQL → grava fatos e sync `dim_*` no Postgres |
 | Motor de consulta genérico | **Python + SQL parametrizado** | Monta e executa as consultas de agregação, comparação e ranking em tempo de leitura, usando mapas fixos como allowlist |
 | Detecção de insights | **TensorFlow** | Autoencoder / rede recorrente-atenção / clusterização sobre séries reconstruídas pelo motor genérico |
 | Entendimento de pergunta e narração | **LLM** (provedor a definir) | Traduz pergunta em parâmetros de consulta; narra o resultado e os insights em linguagem natural |
@@ -63,6 +63,7 @@ erDiagram
         string produtivo_id FK
         string empresa_id FK
         string familia_servico_id FK
+        string servico_id FK
         numeric valor_atribuido
         integer quantidade
     }
@@ -78,9 +79,8 @@ erDiagram
     }
     FATO_COMISSAO {
         date data
-        string beneficiario_tipo
-        string beneficiario_id
-        string tipo_comissao
+        string comissionado_id
+        string comissao_tipo_id
         numeric valor_comissao
     }
     INSIGHTS {
@@ -97,7 +97,7 @@ erDiagram
     FATO_OS ||--o{ FATO_COMISSAO : "gera cálculo de comissão"
 ```
 
-> As três famílias de fato (`FATO_OS`, `FATO_OS_SERVICO`, `FATO_OS_PAGAMENTO`) carregam as mesmas dimensões únicas (concessionária, departamento, vendedor, produtivo, empresa) de forma redundante — cada uma é autossuficiente para seu próprio `GROUP BY`, sem precisar de join entre elas. `familia_servico_id` só existe em `FATO_OS_SERVICO`; `forma_pagamento_id` só existe em `FATO_OS_PAGAMENTO`. **Cruzar serviço com forma de pagamento** (ex.: "quanto de Filme Solar foi pago no PIX") não é suportado: confirmado que a origem no MySQL guarda serviços e formas de pagamento como duas listas independentes por OS, sem vínculo direto entre um serviço específico e uma forma específica — cruzar as duas exigiria alocar valor arbitrariamente, então essa combinação fica permanentemente fora do escopo, não é uma pendência a resolver.
+> As três famílias de fato (`FATO_OS`, `FATO_OS_SERVICO`, `FATO_OS_PAGAMENTO`) carregam as mesmas dimensões únicas (concessionária, departamento, vendedor, produtivo, empresa) de forma redundante — cada uma é autossuficiente para seu próprio `GROUP BY`, sem precisar de join entre elas. Em `FATO_OS_SERVICO`, `familia_servico_id` aponta para **`subgrupos_servicos`** (não `grupos_servicos`) e `servico_id` para o serviço unitário — grão serviço a serviço. `forma_pagamento_id` só existe em `FATO_OS_PAGAMENTO`. **Cruzar serviço com forma de pagamento** (ex.: "quanto de Filme Solar foi pago no PIX") não é suportado: confirmado que a origem no MySQL guarda serviços e formas de pagamento como duas listas independentes por OS, sem vínculo direto entre um serviço específico e uma forma específica — cruzar as duas exigiria alocar valor arbitrariamente, então essa combinação fica permanentemente fora do escopo, não é uma pendência a resolver.
 
 ## 3. Camada 1 — Fatos Diários (três famílias, dimensões únicas redundantes)
 ```sql
@@ -112,10 +112,11 @@ CREATE TABLE fato_os_diario (
 CREATE TABLE fato_os_servico_diario (
     data DATE NOT NULL,
     concessionaria_id TEXT, departamento_id TEXT, vendedor_id TEXT, produtivo_id TEXT, empresa_id TEXT,
-    familia_servico_id TEXT NOT NULL,
+    familia_servico_id TEXT NOT NULL,  -- subgrupos_servicos.id
+    servico_id TEXT NOT NULL,           -- servicos.id (grão serviço a serviço)
     valor_atribuido NUMERIC NOT NULL,
     quantidade INTEGER,
-    PRIMARY KEY (data, concessionaria_id, departamento_id, vendedor_id, produtivo_id, empresa_id, familia_servico_id)
+    PRIMARY KEY (data, concessionaria_id, departamento_id, vendedor_id, produtivo_id, empresa_id, familia_servico_id, servico_id)
 );
 
 CREATE TABLE fato_os_pagamento_diario (
@@ -143,19 +144,17 @@ Diferente do que parecia inicialmente, comissão **não precisa ser calculada po
 ```sql
 CREATE TABLE fato_comissao_diario (
     data DATE NOT NULL,
-    beneficiario_tipo TEXT NOT NULL,  -- 'concessionaria' | 'vendedor' | 'produtivo' | 'indicador'
-    beneficiario_id TEXT NOT NULL,
-    tipo_comissao TEXT NOT NULL,
+    comissionado_id TEXT NOT NULL,   -- comissoes.comissionado_id
+    comissao_tipo_id TEXT NOT NULL,  -- comissoes.comissao_tipo_id → comissao_tipos
     valor_comissao NUMERIC NOT NULL,
-    PRIMARY KEY (data, beneficiario_tipo, beneficiario_id, tipo_comissao)
+    PRIMARY KEY (data, comissionado_id, comissao_tipo_id)
 );
 ```
 O cron de ingestão lê `comissoes` no MySQL (satélites: `comissao_tipos`, `comissao_periodos`, `comissao_pagamentos`) e insere aqui, mesmo padrão de idempotência de `fato_os`. Cascata por tempo se aplica do mesmo jeito.
 
 Mapeamento confirmado no levantamento (`12-levantamento-fase-0.md`):
-- `beneficiario_id` ← `comissoes.comissionado_id` (`funcionarios`)
-- `beneficiario_tipo` ← `funcionario_tipos.nome` via `funcionario_cargos` → `cargos`
-- `tipo_comissao` ← `comissao_tipos` (preferir id estável)
+- `comissionado_id` ← `comissoes.comissionado_id` (mesmo nome da origem)
+- `comissao_tipo_id` ← `comissoes.comissao_tipo_id` (sempre preenchido quando há comissionado; **não** derivar de `funcionario_tipos`/cargo — concessionária/indicador não têm cargo)
 - `valor_comissao` ← `COALESCE(valor_dentro,0)+COALESCE(valor_fora,0)+COALESCE(valor_combo,0)+COALESCE(valor_compensado_permuta,0)+COALESCE(comissao_couro,0)`
 - Momento: comissão geral no **pagamento**; comissão do **produtivo** ao **fechar itens** — OS fechada sem comissão é esperado; não assumir 1:1 com fechada derivada
 - Estados da OS para ingestão: ver `10-dicionario-dados.md` (paga / fechada derivada / cancelada por flag; `paga=1` sem `caixas` é inconsistência); não usar `os.finalizada` como paga∩fechada
@@ -167,7 +166,8 @@ entity_types:
   departamento:   { fato: fato_os, coluna: departamento_id,   quebras_validas: [concessionaria, vendedor] }
   vendedor:       { fato: fato_os, coluna: vendedor_id,       quebras_validas: [concessionaria, departamento] }
   produtivo:      { fato: fato_os, coluna: produtivo_id,      quebras_validas: [concessionaria, departamento] }
-  servico:        { fato: fato_os_servico, coluna: familia_servico_id, quebras_validas: [concessionaria, departamento] }
+  familia_servico: { fato: fato_os_servico, coluna: familia_servico_id, quebras_validas: [concessionaria, departamento, servico] }
+  servico:        { fato: fato_os_servico, coluna: servico_id, quebras_validas: [concessionaria, departamento, familia_servico] }
   forma_pagamento: { fato: fato_os_pagamento, coluna: forma_pagamento_id, quebras_validas: [concessionaria, departamento] }
 ```
 Note que `servico` e `forma_pagamento` **não aparecem como quebra válida um do outro** — reflete a limitação da seção 2 (sem itemização cruzada na origem, essa combinação não existe).
@@ -177,7 +177,7 @@ Note que `servico` e `forma_pagamento` **não aparecem como quebra válida um do
 DIMENSAO_TO_COLUNA = {
     "concessionaria": "concessionaria_id", "departamento": "departamento_id",
     "vendedor": "vendedor_id", "produtivo": "produtivo_id",
-    "familia_servico": "familia_servico_id", "forma_pagamento": "forma_pagamento_id",
+    "familia_servico": "familia_servico_id", "servico": "servico_id", "forma_pagamento": "forma_pagamento_id",
 }
 GRANULARIDADE_SUFIXO = {"diario": "_diario", "semanal": "_semanal", "mensal": "_mensal",
                         "semestral": "_semestral", "anual": "_anual"}

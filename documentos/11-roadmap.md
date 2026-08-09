@@ -11,10 +11,13 @@
 - **Como regenerar:** `python scripts/fase0_levantamento.py` (requer `.env` com acesso ao MySQL `smart`)
 
 ## Fase 1 — Ingestão das Quatro Famílias de Fato
-- US01–US06 (Épico 1): `fato_os`, `fato_os_servico`, `fato_os_pagamento`, `fato_comissao`, idempotência, reconciliação
-- Destino: Postgres local (`POSTGRES_URL` no `.env`)
+- US01–US06 (Épico 1): `fato_os`, `fato_os_servico`, `fato_os_pagamento`, `fato_comissao`, idempotência, reconciliação — **implementado** (`faceta/ingest`, `documentos/13-fase1-ingestao.md`)
+- **Ajuste:** snapshots `dim_*` (família = `subgrupos_*`; `dim_servico`); `fato_os_servico` com `servico_id` (grão serviço a serviço); comissão = `comissionado_id`/`comissao_tipo_id`
+- Documentação alinhada: `10-dicionario-dados.md`, `13-fase1-ingestao.md`, `12-levantamento-fase-0.md` (§ correções), `05-arquitetura-software-sad.md`, ERS/backlog
+- Destino: Postgres local (`POSTGRES_URL` no `.env`), schema `memoria_materializada`
 - Agendamento: **manual / horário** (operador dispara; sem Airflow nesta etapa)
-- **Critério de saída:** um dia real ingerido nas quatro famílias, com reconciliação batendo
+- **Critério de saída:** um dia real ingerido nas quatro famílias, com reconciliação batendo — **feito** para `2026-07-31` (reexecução idempotente)
+- **Como rodar:** `PYTHONPATH=. python -m faceta.ingest --data YYYY-MM-DD` · só dims: `--only-dims`
 
 ## Fase 2 — Cascata por Tempo
 - US07–US08 (Épico 2): crons de cascata semanal/mensal/semestral/anual, para as quatro famílias
