@@ -27,6 +27,8 @@ class LinhaResultado:
     ranking: int | None = None
     participacao_pct: float | None = None
     quebra_id: str | None = None
+    entity_nome: str | None = None
+    quebra_nome: str | None = None
     valor_anterior: Decimal | None = None
     variacao_pct: float | None = None
 
@@ -41,6 +43,7 @@ class ResultadoConsulta:
     linhas: list[LinhaResultado]
     comparacao: str | None = None
     periodo_referencia: Any = None
+    quebra: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -53,6 +56,7 @@ class ResultadoConsulta:
             "periodo_referencia": (
                 self.periodo_referencia.isoformat() if self.periodo_referencia else None
             ),
+            "quebra": self.quebra,
             "linhas": [
                 {
                     **{k: (str(v) if isinstance(v, Decimal) else v) for k, v in asdict(L).items()}
@@ -132,16 +136,26 @@ def consultar(
             if prev is not None and prev != 0:
                 r.variacao_pct = float((r.valor - prev) / prev * 100)
 
-    return ResultadoConsulta(
-        entity_type=entity_type,
-        granularidade=granularidade,
-        periodo=inicio,
-        tabela=table,
-        fato=cfg["fato"],
-        linhas=linhas,
-        comparacao=comparacao,
-        periodo_referencia=ref_inicio,
+    return enriquecer_apos_consulta(
+        pg,
+        ResultadoConsulta(
+            entity_type=entity_type,
+            granularidade=granularidade,
+            periodo=inicio,
+            tabela=table,
+            fato=cfg["fato"],
+            linhas=linhas,
+            comparacao=comparacao,
+            periodo_referencia=ref_inicio,
+            quebra=quebra,
+        ),
     )
+
+
+def enriquecer_apos_consulta(pg, resultado: ResultadoConsulta) -> ResultadoConsulta:
+    from faceta.query.dims import enriquecer_resultado
+
+    return enriquecer_resultado(pg, resultado)
 
 
 def _agregar(

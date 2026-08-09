@@ -61,6 +61,8 @@ Resumo — DDL completo em `05-arquitetura-software-sad.md`, seções 3, 4 e 5.
 
 Cada família tem 5 tabelas (uma por granularidade: `_diario`, `_semanal`, `_mensal`, `_semestral`, `_anual`), mesma estrutura de colunas. Cascata: cada agregada soma o `_diario` no intervalo (não semana→mês); completude parcial; ver `14-fase2-cascata.md`.
 
+Nomes de dimensão resolvem via `dim_*` no Postgres (`faceta/query/dims.py`): o motor e o ask preenchem `entity_nome` / `quebra_nome` a partir dos IDs.
+
 ## 3. Tabela de Cache de Insights (Postgres, criada por este projeto)
 | Coluna | Descrição |
 |---|---|

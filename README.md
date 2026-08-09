@@ -10,6 +10,7 @@ Faceta leva o nome do padrão de **busca facetada**: filtrar e agrupar o mesmo c
 - **Fase 1** — ingestão diária + `dim_*` + `servico_id` no fato de serviço: feito  
 - **Fase 2** — cascata temporal (diário → semanal/mensal/…): feito  
 - **Fase 3** — contrato + motor de consulta: feito  
+- **Fase 4** — pergunta + narração (OpenAI): feito (requer `LLM_API_KEY`)  
 
 ## Rodar ingestão
 
@@ -34,4 +35,11 @@ PYTHONPATH=. .venv/bin/python -m faceta.query --entity-type vendedor --granulari
 PYTHONPATH=. .venv/bin/python scripts/fase3_tc.py
 ```
 
-Docs: `documentos/15-fase3-consulta.md` · `documentos/14-fase2-cascata.md` · `documentos/13-fase1-ingestao.md` · `documentos/11-roadmap.md`
+## Pergunta (Fase 4)
+
+```bash
+# .env: LLM_API_KEY=...  LLM_MODEL=gpt-5-mini
+PYTHONPATH=. .venv/bin/python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"
+```
+
+Docs: `documentos/16-fase4-ask.md` · `documentos/15-fase3-consulta.md` · `documentos/14-fase2-cascata.md` · `documentos/11-roadmap.md`

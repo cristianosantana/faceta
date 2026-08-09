@@ -32,8 +32,10 @@
 - **Critério de saída:** TC01–TC11 (`06-plano-testes-casos-teste.md`) — **feito** via `scripts/fase3_tc.py` (dado real)
 
 ## Fase 4 — Entendimento de Pergunta e Narração
-- US18–US20 (Épico 6): LLM traduz pergunta em parâmetros, motor genérico responde, LLM narra
-- **Critério de saída:** uma pergunta real, ponta a ponta, em no máximo 2 chamadas de LLM
+- US18–US20 (Épico 6): LLM traduz pergunta → motor → LLM narra — **implementado** (`faceta/ask`, `documentos/16-fase4-ask.md`)
+- Provedor: OpenAI · modelo: `gpt-5-mini` (`LLM_API_KEY` + `LLM_MODEL` no `.env`)
+- **Como rodar:** `PYTHONPATH=. python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"`
+- **Critério de saída:** uma pergunta real ponta a ponta com ≤2 chamadas LLM — **feito**; nomes via `dim_*` em todas as dimensões (`entity_nome` / `quebra_nome`)
 
 ## Fase 5 — Insights via Deep Learning
 - US15–US17 (Épico 5): reconstrução de série, modelo TensorFlow, narração condicional
