@@ -3,11 +3,12 @@
 > Este sistema não tem interface de usuário final própria nesta fase — quem opera é a equipe técnica e, indiretamente, o narrator/chat público que consulta via o motor genérico. Este manual substitui o "Manual do Usuário Final" tradicional por um guia operacional.
 
 ## 1. Rotina Diária Esperada
-1. Quatro crons de ingestão leem o MySQL: OS (`fato_os`), itens de serviço (`fato_os_servico`), itens de pagamento (`fato_os_pagamento`) e comissões já calculadas (`fato_comissao`)
-2. A ingestão de serviço/pagamento reconcilia a soma dos itens contra o valor total da OS, sinalizando divergência
-3. Nos fechamentos de cada janela de tempo, a cascata (por família × granularidade) soma o `*_diario` no intervalo e insere a linha nova — default insert-only; reprocessar com `--force` (ver `14-fase2-cascata.md`)
-4. O job de insights roda periodicamente, reconstruindo séries via o motor genérico (para as quatro famílias) e narrando apenas o que os modelos sinalizarem
-5. Perguntas de usuário são respondidas em tempo real pelo motor de consulta genérico — nenhuma ação manual necessária em operação normal
+1. `python -m faceta.ops health` — conferir MySQL/Postgres/contrato
+2. Ingestão do dia: `python -m faceta.ingest --data YYYY-MM-DD` (ou `faceta.ops backfill`)
+3. Cascata no fechamento da janela: `python -m faceta.cascata --granularidade semanal --periodo …`
+4. Insights (opcional): `python -m faceta.insights run --periodo …`
+5. `python -m faceta.ops doctor` e `python -m faceta.ops metrics` — gaps, reconciliação, llm_calls≤2
+6. Perguntas via `python -m faceta.ask "…"` (motor + lookup de insights)
 
 ## 2. Como Adicionar um Novo Tipo de Entidade (entity_type)
 1. Confirmar a qual família de fato a dimensão pertence (`fato_os` se for única por OS; se for multivalorada como serviço/pagamento, precisa de uma família própria nova — ver seção 3)
@@ -35,9 +36,10 @@ Em ambos os casos:
 | Custo de LLM acima do esperado | Modelo de detecção disparando com frequência maior que o previsto, ou perguntas gerando mais de 2 chamadas | Revisar limiar do modelo de detecção; auditar entendimento de pergunta e narração |
 
 ## 5. Monitoramento Recomendado
-- Latência das consultas do motor genérico por família e granularidade
-- Número de chamadas a LLM por pergunta respondida (deve ser sempre ≤ 2)
+- Latência das consultas do motor genérico por família e granularidade — `faceta.ops metrics`
+- Número de chamadas a LLM por pergunta respondida (deve ser sempre ≤ 2) — traces ask em `metrics.llm_calls_ask`
 - Número de chamadas a LLM no job de insights por execução
 - **Traces JSONL** em `logs/` (`17-tracing.md`): `python -m faceta.trace show <arquivo>`
-- Divergências de reconciliação (serviço/pagamento vs. total da OS) por execução de ingestão
-- Consultas rejeitadas pela allowlist do contrato, como sinal de dado novo não mapeado ou tentativa inválida (ex.: cruzamento servico × forma_pagamento)
+- Divergências de reconciliação — `faceta.ops doctor` / tabela `ingest_reconciliacao`
+- Consultas rejeitadas pela allowlist do contrato
+- Playbook completo: `19-fase6-ops.md`

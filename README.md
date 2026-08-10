@@ -12,6 +12,7 @@ Faceta leva o nome do padrão de **busca facetada**: filtrar e agrupar o mesmo c
 - **Fase 3** — contrato + motor de consulta: feito  
 - **Fase 4** — pergunta + narração (OpenAI): feito (requer `LLM_API_KEY`)  
 - **Fase 5** — insights (autoencoder + tabela `insights`): feito  
+- **Fase 6** — operação (`faceta.ops`): feito (local; prod `[PENDENTE]`)  
 
 ## Rodar ingestão
 
@@ -62,3 +63,13 @@ PYTHONPATH=. .venv/bin/python -m faceta.insights tc
 ```
 
 Ask consulta `insights` e envia ao narrador. Doc: `documentos/18-fase5-insights.md`
+
+## Operação (Fase 6)
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.ops health
+PYTHONPATH=. .venv/bin/python -m faceta.ops doctor
+PYTHONPATH=. .venv/bin/python -m faceta.ops metrics
+```
+
+Doc: `documentos/19-fase6-ops.md`

@@ -45,8 +45,10 @@
 - **Critério de saída:** TC16–TC17 — **feito**; insight real gerado (ex. vendedor 17 / W31)
 
 ## Fase 6 — Operação
-- Monitoramento (`09-manual-operacional.md`, seção 5), diagnóstico de problemas comuns, backfill
-- **Critério de saída:** sistema rodando em produção com as métricas de sucesso do `01-termo-abertura-projeto.md` (seção 7) mensuradas
+- Monitoramento, diagnóstico, backfill — **implementado** (`faceta/ops`, `documentos/19-fase6-ops.md`)
+- **Como rodar:** `python -m faceta.ops health|status|backfill|metrics|doctor`
+- **Critério de saída (local):** health/doctor/metrics rodando; meta ≤2 LLM/ask via traces — **feito**
+- Deploy produção / servidor: `[PENDENTE]` (`01-termo-abertura-projeto.md`)
 
 ## Dependências entre fases
 ```
