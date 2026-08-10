@@ -23,6 +23,14 @@ PYTHONPATH=. .venv/bin/python -m faceta.ingest --data 2026-07-31
 PYTHONPATH=. .venv/bin/python -m faceta.ingest --only-dims
 ```
 
+Backfill do mês inteiro (`YYYY-MM`):
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/mes_ingest.py 2026-07
+PYTHONPATH=. .venv/bin/python scripts/mes_cascata.py 2026-07
+PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07   # todos entity_types × semanas
+```
+
 ## Cascata (Fase 2)
 
 Soma sempre a partir do diário; completude parcial; `--force` para reprocessar:

@@ -10,6 +10,15 @@
 5. `python -m faceta.ops doctor` e `python -m faceta.ops metrics` — gaps, reconciliação, llm_calls≤2
 6. Perguntas via `python -m faceta.ask "…"` (motor + lookup de insights)
 
+### Backfill por mês (`YYYY-MM`)
+```bash
+PYTHONPATH=. python scripts/mes_ingest.py 2026-07
+PYTHONPATH=. python scripts/mes_cascata.py 2026-07          # semanal (semanas do mês) + mensal
+PYTHONPATH=. python scripts/mes_insights.py 2026-07         # train+run × todos entity_types × semanas
+# --dry-run em qualquer um; cascata --force; insights --force-llm --limit 5 --entity-type vendedor,servico
+```
+
+
 ## 2. Como Adicionar um Novo Tipo de Entidade (entity_type)
 1. Confirmar a qual família de fato a dimensão pertence (`fato_os` se for única por OS; se for multivalorada como serviço/pagamento, precisa de uma família própria nova — ver seção 3)
 2. Adicionar a entrada correspondente em `contrato.yaml`, com a família, coluna de agrupamento, quebras e comparações válidas
