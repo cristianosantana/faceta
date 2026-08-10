@@ -13,6 +13,7 @@ Faceta leva o nome do padrão de **busca facetada**: filtrar e agrupar o mesmo c
 - **Fase 4** — pergunta + narração (OpenAI): feito (requer `LLM_API_KEY`)  
 - **Fase 5** — insights (autoencoder + tabela `insights`): feito  
 - **Fase 6** — operação (`faceta.ops`): feito (local; prod `[PENDENTE]`)  
+- **Fase 7** — API FastAPI (`POST /ask`): feito (sem auth)  
 
 ## Rodar ingestão
 
@@ -73,3 +74,13 @@ PYTHONPATH=. .venv/bin/python -m faceta.ops metrics
 ```
 
 Doc: `documentos/19-fase6-ops.md`
+
+## API (Fase 7)
+
+```bash
+PYTHONPATH=. .venv/bin/uvicorn faceta.api:app --reload --host 127.0.0.1 --port 8000
+# POST http://127.0.0.1:8000/ask  {"pergunta":"..."}
+# docs: http://127.0.0.1:8000/docs
+```
+
+Doc: `documentos/20-fase7-api.md`

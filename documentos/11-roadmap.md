@@ -50,12 +50,20 @@
 - **Critério de saída (local):** health/doctor/metrics rodando; meta ≤2 LLM/ask via traces — **feito**
 - Deploy produção / servidor: `[PENDENTE]` (`01-termo-abertura-projeto.md`)
 
+## Fase 7 — API HTTP (FastAPI) para Pergunta
+- Expor a pergunta em linguagem natural via **FastAPI**, reutilizando `faceta.ask.perguntar` (Fase 4) + lookup de `insights` (Fase 5) — **implementado** (`faceta/api.py`, `documentos/20-fase7-api.md`)
+- Rota: `POST /ask` · `GET /health` · OpenAPI em `/docs`
+- **Sem autenticação nesta fase** — local/dev; auth `[PENDENTE]`
+- **Como rodar:** `PYTHONPATH=. uvicorn faceta.api:app --reload --host 127.0.0.1 --port 8000`
+- **Critério de saída:** pergunta real via HTTP com `llm_calls ≤ 2` — **código pronto** (requer `LLM_API_KEY` + Postgres)
+
 ## Dependências entre fases
 ```
-Fase 0 → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 6
+Fase 0 → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 6 → Fase 7
                               ↘ Fase 5 (paralela à 4, depende da 1-2) ↗
 ```
 A Fase 5 (insights) pode começar em paralelo à Fase 4 assim que houver histórico suficiente — não precisa esperar a camada de pergunta estar pronta, já que consome os fatos diretamente via motor genérico.
+A Fase 7 empacota o ask como HTTP; não altera o motor nem o contrato.
 
 ## Decisões de infra / gestão (atualizado)
 

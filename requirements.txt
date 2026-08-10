@@ -4,4 +4,6 @@ psycopg[binary]>=3.1.0
 PyYAML>=6.0
 openai>=1.40.0
 numpy>=2.0.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
 # tensorflow>=2.15.0  # preferido quando houver wheel (ex. Python ≤3.12); senão usa autoencoder NumPy

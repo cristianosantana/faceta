@@ -1,6 +1,23 @@
-# Documentação de API (Proposta)
+# Documentação de API
 
-> Este endpoint é uma proposta baseada no que foi discutido. Ainda não foi validado como requisito formal — `[PENDENTE]` confirmar se o acesso será via API HTTP, leitura direta ao Postgres, ou ambos.
+> Fase 7 (**implementada**): `POST /ask` via FastAPI — ver `20-fase7-api.md`.  
+> `GET /consulta` (motor parametrizado) permanece proposta; autenticação `[PENDENTE]`.
+
+## `POST /ask` (Fase 7)
+Executa o pipeline `faceta.ask` (entendimento → motor → insights cache → narração). **Sem autenticação nesta fase** (só local/dev).
+
+**Body (JSON)**
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `pergunta` | string | sim | Pergunta em linguagem natural |
+| `sem_narracao` | boolean | não | Se `true`, só 1 LLM (entendimento); omite narração |
+
+**Resposta 200** — payload alinhado a `RespostaAsk` (`narracao`, `params`, `resultado`, `insights`, `llm_calls`, `trace_id`, …)  
+**Resposta 400** — pergunta rejeitada pelo contrato / resolução de dimensão  
+**Resposta 500** — falha interna (LLM, banco, etc.)  
+**Resposta 503** — Postgres / config indisponível
+
+Serve: `uvicorn faceta.api:app --reload --port 8000` · docs: `/docs`
 
 ## `GET /consulta`
 Executa o motor de consulta genérico, roteando internamente para a família de fato correta (`fato_os`, `fato_os_servico`, `fato_os_pagamento` ou `fato_comissao`) conforme o `entity_type` pedido, aplicando comparações e ranking quando solicitados. Corresponde exatamente à saída da camada de Entendimento de Pergunta — quem chama esse endpoint nunca precisa saber a qual família o `entity_type` pertence.
