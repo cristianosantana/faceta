@@ -102,6 +102,8 @@ def apply_ddl(conn: psycopg.Connection) -> None:
 
         cur.execute(ddl)
         cur.execute(ddl_cascata)
+        ddl_insights = (sql_dir / "ddl_insights.sql").read_text(encoding="utf-8")
+        cur.execute(ddl_insights)
     conn.commit()
 
 

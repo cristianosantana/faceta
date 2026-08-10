@@ -38,9 +38,11 @@
 - **Critério de saída:** uma pergunta real ponta a ponta com ≤2 chamadas LLM — **feito**; nomes via `dim_*` em todas as dimensões (`entity_nome` / `quebra_nome`)
 
 ## Fase 5 — Insights via Deep Learning
-- US15–US17 (Épico 5): reconstrução de série, modelo TensorFlow, narração condicional
-- **Depende de:** histórico acumulado suficiente nas Fases 1–2 (modelo precisa de série histórica pra treinar)
-- **Critério de saída:** TC16–TC17 passando; ao menos um insight real gerado e validado manualmente
+- US15–US17 (Épico 5): séries via motor → autoencoder → LLM condicional → `insights` — **implementado** (`faceta/insights`, `documentos/18-fase5-insights.md`)
+- Ask **lê** `insights` e envia ao narrador (não gera no ask)
+- Backend: TensorFlow se disponível; senão autoencoder NumPy (Python 3.14 sem wheel TF)
+- **Como rodar:** `python -m faceta.insights train|run|tc`
+- **Critério de saída:** TC16–TC17 — **feito**; insight real gerado (ex. vendedor 17 / W31)
 
 ## Fase 6 — Operação
 - Monitoramento (`09-manual-operacional.md`, seção 5), diagnóstico de problemas comuns, backfill

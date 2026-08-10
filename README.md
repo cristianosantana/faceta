@@ -11,6 +11,7 @@ Faceta leva o nome do padrão de **busca facetada**: filtrar e agrupar o mesmo c
 - **Fase 2** — cascata temporal (diário → semanal/mensal/…): feito  
 - **Fase 3** — contrato + motor de consulta: feito  
 - **Fase 4** — pergunta + narração (OpenAI): feito (requer `LLM_API_KEY`)  
+- **Fase 5** — insights (autoencoder + tabela `insights`): feito  
 
 ## Rodar ingestão
 
@@ -51,3 +52,13 @@ JSONL em `logs/` (gitignored):
 ```bash
 PYTHONPATH=. .venv/bin/python -m faceta.trace show logs/2026-08-09/<trace_id>.jsonl
 ```
+
+## Insights (Fase 5)
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.insights train --entity-type vendedor --granularidade semanal
+PYTHONPATH=. .venv/bin/python -m faceta.insights run --periodo 2026-W31 --limit 1
+PYTHONPATH=. .venv/bin/python -m faceta.insights tc
+```
+
+Ask consulta `insights` e envia ao narrador. Doc: `documentos/18-fase5-insights.md`

@@ -52,8 +52,8 @@ MYSQL_PASSWORD=
 CONTRATO_PATH=./contrato.yaml
 LLM_API_KEY=
 LLM_MODEL=gpt-5-mini
-TF_MODEL_PATH=
 INSIGHT_DETECTION_THRESHOLD=
+# Modelos em models/insights/ (gitignored). TensorFlow opcional.
 ```
 
 > Credenciais reais ficam só no `.env` (gitignored). Agendamento das rotinas: execução **manual por hora** nesta fase (ver `11-roadmap.md`).

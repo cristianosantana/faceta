@@ -19,6 +19,7 @@ class RespostaAsk:
     resultado: ResultadoConsulta
     narracao: str
     llm_calls: int
+    insights: list | None = None
     trace_id: str | None = None
     trace_path: str | None = None
 
@@ -29,15 +30,18 @@ class RespostaAsk:
             "resultado": self.resultado.to_dict(),
             "narracao": self.narracao,
             "llm_calls": self.llm_calls,
+            "insights": self.insights or [],
             "trace_id": self.trace_id,
             "trace_path": self.trace_path,
         }
 
 
 def perguntar(pg, pergunta: str, *, narrar: bool = True) -> RespostaAsk:
-    """Pipeline Fase 4: entender (1 LLM) → motor → narrar (1 LLM). Máx. 2 chamadas."""
+    """Pipeline Fase 4: entender (1 LLM) → motor → lookup insights → narrar (1 LLM). Máx. 2 chamadas."""
     if not pergunta.strip():
         raise ConsultaRejeitada("pergunta vazia")
+
+    from faceta.insights.lookup import insights_para_ask
 
     with trace_run("ask", pergunta=pergunta[:500], narrar=narrar) as run:
         with span("load_contrato"):
@@ -91,10 +95,18 @@ def perguntar(pg, pergunta: str, *, narrar: bool = True) -> RespostaAsk:
                 contrato=contrato,
             )
 
+        with span("lookup_insights", regra="cache_somente"):
+            insights = insights_para_ask(pg, params, resultado)
+
         narracao = ""
         if narrar:
-            with span("narrar_resposta", regra="LLM2_narracao", n_linhas=len(resultado.linhas)):
-                narracao = narrar_resposta(pergunta, params, resultado)
+            with span(
+                "narrar_resposta",
+                regra="LLM2_narracao",
+                n_linhas=len(resultado.linhas),
+                n_insights=len(insights),
+            ):
+                narracao = narrar_resposta(pergunta, params, resultado, insights=insights)
             llm_calls += 1
 
         if llm_calls > 2:
@@ -109,6 +121,7 @@ def perguntar(pg, pergunta: str, *, narrar: bool = True) -> RespostaAsk:
             resultado=resultado,
             narracao=narracao,
             llm_calls=llm_calls,
+            insights=insights,
             trace_id=run.trace_id,
             trace_path=str(run.path),
         )

@@ -9,7 +9,8 @@ from faceta.query.engine import ResultadoConsulta
 
 
 SYSTEM = """Você é o narrador do Faceta. Em português do Brasil, responda de forma clara e objetiva
-a pergunta do usuário usando APENAS os números do resultado da consulta.
+a pergunta do usuário usando APENAS os números do resultado da consulta e, se houver, os insights
+já cacheados (campo insights) — integre-os naturalmente, sem inventar fatos novos.
 Não invente valores. Mencione período e granularidade. Se houver ranking, cite os principais.
 Se houver comparação, cite variação. Sem markdown excessivo; 1–3 parágrafos curtos.
 IMPORTANTE: cite entidades pelo campo entity_nome (e quebra_nome, se houver).
@@ -21,6 +22,7 @@ def narrar_resposta(
     pergunta: str,
     params: ParametrosPergunta,
     resultado: ResultadoConsulta,
+    insights: list[dict] | None = None,
 ) -> str:
     payload: dict[str, Any] = {
         "pergunta": pergunta,
@@ -35,6 +37,7 @@ def narrar_resposta(
             "ranking": params.ranking,
         },
         "consulta": resultado.to_dict(),
+        "insights": insights or [],
     }
     # limitar tamanho para o narrador
     d = payload["consulta"]
