@@ -15,6 +15,117 @@ Faceta leva o nome do padrão de **busca facetada**: filtrar e agrupar o mesmo c
 - **Fase 6** — operação (`faceta.ops`): feito (local; prod `[PENDENTE]`)  
 - **Fase 7** — API FastAPI (`POST /ask`): feito (sem auth)  
 
+## Setup
+
+```bash
+cd /path/faceta
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+cp .env.example .env   # preencher MYSQL_*, POSTGRES_URL, LLM_API_KEY, …
+```
+
+Prefixo comum nos exemplos abaixo: `PYTHONPATH=. .venv/bin/python` (ou `PYTHONPATH=. python` com o venv ativo).
+
+## Referência rápida de CLIs
+
+Catálogo dos módulos e scripts — use esta seção como índice; as hipóteses A–I abaixo mostram **quando** rodar cada um.
+
+### Migração de schema (`faceta.migrate`) — manual, uma vez por ambiente
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.migrate status
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up --dry-run
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up --no-ddl   # só migrações, sem recreate CREATE IF NOT EXISTS
+```
+
+Histórico: `memoria_materializada.schema_migrations`. Drops **não** rodam no ingest — só aqui.
+
+### Ingestão (`faceta.ingest`)
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.ingest                         # ontem
+PYTHONPATH=. .venv/bin/python -m faceta.ingest --data 2026-07-31
+PYTHONPATH=. .venv/bin/python -m faceta.ingest --data 2026-07-31 --familia comissao
+PYTHONPATH=. .venv/bin/python -m faceta.ingest --only-dims
+PYTHONPATH=. .venv/bin/python -m faceta.ingest --data 2026-07-31 --skip-dims
+PYTHONPATH=. .venv/bin/python -m faceta.ingest --data 2026-07-31 --skip-ddl --skip-reconcile
+```
+
+### Cascata (`faceta.cascata`)
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade semanal   --periodo 2026-07-31
+PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade mensal    --periodo 2026-07-01 --force
+PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade semestral --periodo 2026-07-01 --force
+PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade anual     --periodo 2026-12-31 --force
+PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade semanal --periodo 2026-07-31 --familia os,comissao
+```
+
+### Consulta / ask / insights
+
+```bash
+# motor parametrizado (sem LLM)
+PYTHONPATH=. .venv/bin/python -m faceta.query --entity-type vendedor --granularidade semanal --periodo 2026-W31 --ranking
+PYTHONPATH=. .venv/bin/python -m faceta.query --entity-type produtivo --granularidade semanal --periodo 2026-W31 --ranking
+PYTHONPATH=. .venv/bin/python -m faceta.query --entity-type forma_pagamento --granularidade mensal --periodo 2026-07 --comparacao vs_periodo_anterior
+
+# pergunta NL (≤2 LLM)
+PYTHONPATH=. .venv/bin/python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"
+PYTHONPATH=. .venv/bin/python -m faceta.ask --json "Quanto entrou de PIX em julho de 2026?"
+PYTHONPATH=. .venv/bin/python -m faceta.ask --sem-narracao "ranking de serviços em 2026-07"
+
+# insights (lote)
+PYTHONPATH=. .venv/bin/python -m faceta.insights train --entity-type vendedor --granularidade semanal
+PYTHONPATH=. .venv/bin/python -m faceta.insights run --entity-type vendedor --granularidade semanal --periodo 2026-W31
+PYTHONPATH=. .venv/bin/python -m faceta.insights run --periodo 2026-W31 --limit 1 --sem-narracao
+PYTHONPATH=. .venv/bin/python -m faceta.insights tc
+# DEV ONLY (nunca no cron):
+FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. .venv/bin/python -m faceta.insights run --periodo 2026-W31 --force-llm --limit 1
+```
+
+### Operação (`faceta.ops`)
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.ops health
+PYTHONPATH=. .venv/bin/python -m faceta.ops status --dias 14
+PYTHONPATH=. .venv/bin/python -m faceta.ops doctor
+PYTHONPATH=. .venv/bin/python -m faceta.ops metrics --dias 30
+PYTHONPATH=. .venv/bin/python -m faceta.ops backfill --de 2026-07-01 --ate 2026-07-31
+PYTHONPATH=. .venv/bin/python -m faceta.ops backfill --de 2026-07-01 --ate 2026-07-31 --cascata
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026 --de-mes 7 --ate-mes 7 --skip-insights
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2025 --continue-on-error
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026 --skip-ingest --skip-insights --force
+```
+
+### Scripts auxiliares
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/fase0_levantamento.py
+PYTHONPATH=. .venv/bin/python scripts/fase3_tc.py
+PYTHONPATH=. .venv/bin/python scripts/mes_ingest.py 2026-07
+PYTHONPATH=. .venv/bin/python scripts/mes_cascata.py 2026-07
+PYTHONPATH=. .venv/bin/python scripts/mes_cascata.py 2026-07 --force --dry-run
+PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07
+PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --entity-type vendedor,servico --limit 10
+FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --force-llm --limit 5
+```
+
+### Tracing e API
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.trace show logs/2026-08-09/<trace_id>.jsonl
+PYTHONPATH=. .venv/bin/python -m faceta.trace show logs/2026-08-09/<trace_id>.jsonl --raw
+
+PYTHONPATH=. .venv/bin/uvicorn faceta.api:app --reload --host 127.0.0.1 --port 8000
+# GET  http://127.0.0.1:8000/health
+# GET  http://127.0.0.1:8000/docs
+curl -s http://127.0.0.1:8000/ask -H 'Content-Type: application/json' \
+  -d '{"pergunta":"Quais vendedores mais venderam na semana 2026-W31?"}'
+curl -s http://127.0.0.1:8000/ask -H 'Content-Type: application/json' \
+  -d '{"pergunta":"…","sem_narracao":true}'
+```
+
 ## Crons e rotinas de execução
 
 > **Agendador de SO / Airflow ainda `[PENDENTE]`.** Hoje tudo é CLI manual (ou o que você agendar no cron do SO apontando para estes comandos). Prefixo comum: `cd` na raiz do repo + `PYTHONPATH=.` + `.venv/bin/python`.
@@ -38,7 +149,7 @@ Cascata **sempre** soma do `*_diario` (não semana→mês). Se faltar dia no di�
 |---|---|
 | Famílias de fato (`--familia`) | `os`, `servico`, `pagamento`, `comissao` (default: todas) |
 | Granularidades de cascata | `semanal`, `mensal`, `semestral`, `anual` (+ `diario` só na ingestão) |
-| Snapshots `dim_*` | departamento, concessionaria, familia_servico, familia_produto, servico, funcionario, forma_pagamento, empresa, comissao_tipo |
+| Snapshots `dim_*` | departamento, concessionaria, familia_servico, familia_produto, servico, funcionario, **funcionario_papel**, forma_pagamento, empresa, comissao_tipo |
 | `entity_type` (contrato / ask / insights) | concessionaria, departamento, vendedor, produtivo, empresa, familia_servico, servico, forma_pagamento, comissionado, comissao_tipo |
 | Chave de período | `--periodo` = qualquer dia dentro da janela; o job normaliza para o início (segunda ISO / dia 1 / 1-jan\|1-jul / 1-jan) |
 
@@ -190,12 +301,15 @@ Detalhes: `documentos/09-manual-operacional.md` · `documentos/14-fase2-cascata.
 
 ### Migração de schema (manual, versionada)
 
-`apply_ddl` (chamado no ingest/cascata) só faz **CREATE IF NOT EXISTS**. Drops destrutivos **não** rodam mais automaticamente.
+Ver também a [referência rápida](#migração-de-schema-facetamigrate--manual-uma-vez-por-ambiente) no topo.
+
+`apply_ddl` (chamado no ingest/cascata/ops) só faz **CREATE IF NOT EXISTS**. Drops destrutivos **não** rodam mais automaticamente.
 
 ```bash
 PYTHONPATH=. .venv/bin/python -m faceta.migrate status
 PYTHONPATH=. .venv/bin/python -m faceta.migrate up --dry-run
-PYTHONPATH=. .venv/bin/python -m faceta.migrate up    # aplica pendentes + recreate DDL seguro
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up --no-ddl
 ```
 
 Histórico em `memoria_materializada.schema_migrations`. Após um DROP, reingerir os dias afetados.
@@ -236,6 +350,8 @@ PYTHONPATH=. .venv/bin/python scripts/fase3_tc.py
 ```bash
 # .env: LLM_API_KEY=...  LLM_MODEL=gpt-5-mini
 PYTHONPATH=. .venv/bin/python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"
+PYTHONPATH=. .venv/bin/python -m faceta.ask --json "…"
+PYTHONPATH=. .venv/bin/python -m faceta.ask --sem-narracao "…"
 ```
 
 Docs: `documentos/17-tracing.md` · `documentos/16-fase4-ask.md` · `documentos/15-fase3-consulta.md` · `documentos/11-roadmap.md`
@@ -252,8 +368,9 @@ PYTHONPATH=. .venv/bin/python -m faceta.trace show logs/2026-08-09/<trace_id>.js
 
 ```bash
 PYTHONPATH=. .venv/bin/python -m faceta.insights train --entity-type vendedor --granularidade semanal
-PYTHONPATH=. .venv/bin/python -m faceta.insights run --periodo 2026-W31 --limit 1
+PYTHONPATH=. .venv/bin/python -m faceta.insights run --entity-type vendedor --periodo 2026-W31 --limit 1
 PYTHONPATH=. .venv/bin/python -m faceta.insights tc
+FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. .venv/bin/python -m faceta.insights run --periodo 2026-W31 --force-llm --limit 1
 ```
 
 Ask consulta `insights` e envia ao narrador. Doc: `documentos/18-fase5-insights.md`
@@ -262,8 +379,10 @@ Ask consulta `insights` e envia ao narrador. Doc: `documentos/18-fase5-insights.
 
 ```bash
 PYTHONPATH=. .venv/bin/python -m faceta.ops health
+PYTHONPATH=. .venv/bin/python -m faceta.ops status --dias 14
 PYTHONPATH=. .venv/bin/python -m faceta.ops doctor
-PYTHONPATH=. .venv/bin/python -m faceta.ops metrics
+PYTHONPATH=. .venv/bin/python -m faceta.ops metrics --dias 30
+PYTHONPATH=. .venv/bin/python -m faceta.ops backfill --de 2026-07-01 --ate 2026-07-31
 PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026 --de-mes 7 --ate-mes 7 --skip-insights
 ```
 
@@ -273,8 +392,9 @@ Doc: `documentos/19-fase6-ops.md`
 
 ```bash
 PYTHONPATH=. .venv/bin/uvicorn faceta.api:app --reload --host 127.0.0.1 --port 8000
-# POST http://127.0.0.1:8000/ask  {"pergunta":"..."}
-# docs: http://127.0.0.1:8000/docs
+# GET  /health · GET /docs · POST /ask
+curl -s http://127.0.0.1:8000/ask -H 'Content-Type: application/json' \
+  -d '{"pergunta":"Quais vendedores mais venderam na semana 2026-W31?"}'
 ```
 
 Doc: `documentos/20-fase7-api.md`
