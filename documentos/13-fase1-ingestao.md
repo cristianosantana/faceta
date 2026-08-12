@@ -35,6 +35,7 @@ PYTHONPATH=. .venv/bin/python -m faceta.ingest --only-dims  # só dimensões
 | `dim_familia_produto` | `subgrupos_produtos` |
 | `dim_servico` | `servicos` |
 | `dim_funcionario` | `funcionarios` |
+| `dim_funcionario_papel` | papéis via `funcionario_tipos` (resolve vendedor/produtivo) |
 | `dim_forma_pagamento` | `caixa_tipos` |
 | `dim_empresa` | `empresas` |
 | `dim_comissao_tipo` | `comissao_tipos` |

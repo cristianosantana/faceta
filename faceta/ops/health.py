@@ -54,6 +54,7 @@ def healthcheck() -> dict[str, Any]:
                 "fato_os_pagamento_diario",
                 "fato_comissao_diario",
                 "dim_funcionario",
+                "dim_funcionario_papel",
                 "insights",
                 "ingest_reconciliacao",
             ]

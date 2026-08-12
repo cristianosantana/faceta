@@ -28,13 +28,15 @@ Para ler fatos **sem** depender do MySQL em toda consulta, o ingest sincroniza c
 | `dim_familia_produto` | `subgrupos_produtos` |
 | `dim_servico` | `servicos` (`familia_servico_id` ← `subgrupo_servico_id`) |
 | `dim_funcionario` | `funcionarios` |
+| `dim_funcionario_papel` | `funcionarios` → `funcionario_cargos` → `cargos` → `funcionario_tipos` (discrimina vendedor/produtivo na resolução de nome) |
 | `dim_forma_pagamento` | `caixa_tipos` |
 | `dim_empresa` | `empresas` |
 | `dim_comissao_tipo` | `comissao_tipos` |
 
 Sync: `TRUNCATE` + `INSERT` a cada ingest (ou `python -m faceta.ingest --only-dims`). A origem MySQL continua canônica; o snapshot pode atrasar até o próximo sync.
 
-Cadeia de papel (só na origem): `funcionarios` → `funcionario_cargos` → `cargos.funcionario_tipo_id` → `funcionario_tipos`.
+Cadeia de papel (sincronizada em `dim_funcionario_papel`): `funcionarios` → `funcionario_cargos` → `cargos.funcionario_tipo_id` → `funcionario_tipos`.  
+`ask/resolve.resolver_nome` para `vendedor` / `produtivo` filtra por esses tipos (ex. Vendas vs Produtivos) e, em fallback, por aparição no fato do papel (`vendedor_id` / `produtivo_id`) — evita homônimos entre papéis.
 
 ### Estados da OS (critérios analíticos Faceta)
 Validado em `12-levantamento-fase-0.md` §5. **Não** usar `os.finalizada` como proxy.

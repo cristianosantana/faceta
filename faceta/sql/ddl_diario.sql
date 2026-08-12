@@ -101,6 +101,15 @@ CREATE TABLE IF NOT EXISTS memoria_materializada.dim_funcionario (
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Papéis (funcionario_tipos via cargos) — discrimina vendedor vs produtivo na resolução de nome
+CREATE TABLE IF NOT EXISTS memoria_materializada.dim_funcionario_papel (
+    funcionario_id TEXT NOT NULL,
+    tipo_id TEXT NOT NULL,
+    tipo_nome TEXT NOT NULL,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (funcionario_id, tipo_id)
+);
+
 CREATE TABLE IF NOT EXISTS memoria_materializada.dim_forma_pagamento (
     id TEXT PRIMARY KEY,
     nome TEXT NOT NULL,
