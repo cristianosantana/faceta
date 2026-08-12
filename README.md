@@ -152,6 +152,23 @@ PYTHONPATH=. .venv/bin/python -m faceta.ops doctor
 PYTHONPATH=. .venv/bin/python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"
 ```
 
+### Hipótese I — pipeline de um ano (`faceta.ops ano`)
+
+Um processo só (como `backfill`), ordem canônica: dims → diário → semanal → mensal → semestral → anual → insights. Não substitui o cron D−1 nem os CLIs granulares.
+
+```bash
+# valida um mês conhecido antes do ano todo
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026 --de-mes 7 --ate-mes 7 --skip-insights
+# ano corrente: só até ontem (default --ate-hoje)
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026
+# ano fechado, tolera falhas pontuais
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2025 --continue-on-error
+# só cascata (+ dims), reprocessa agregadas
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026 --skip-ingest --skip-insights --force
+```
+
+Flags: `--skip-ingest|cascata|semestral|anual|insights|dims`, `--familia`, `--entity-type`, `--force` (cascata), `--force-llm` (exige `FACETA_ALLOW_FORCE_LLM=1`), `--continue-on-error`, `--sem-limite-hoje`.
+
 ### Sugestão de crontab (quando for ligar o SO)
 
 Exemplos ilustrativos (ajuste caminho do venv):
@@ -247,6 +264,7 @@ Ask consulta `insights` e envia ao narrador. Doc: `documentos/18-fase5-insights.
 PYTHONPATH=. .venv/bin/python -m faceta.ops health
 PYTHONPATH=. .venv/bin/python -m faceta.ops doctor
 PYTHONPATH=. .venv/bin/python -m faceta.ops metrics
+PYTHONPATH=. .venv/bin/python -m faceta.ops ano 2026 --de-mes 7 --ate-mes 7 --skip-insights
 ```
 
 Doc: `documentos/19-fase6-ops.md`

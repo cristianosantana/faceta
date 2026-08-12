@@ -11,6 +11,7 @@ PYTHONPATH=. python -m faceta.ops status --dias 14
 PYTHONPATH=. python -m faceta.ops backfill --de 2026-07-30 --ate 2026-07-31 --cascata
 PYTHONPATH=. python -m faceta.ops metrics --dias 30
 PYTHONPATH=. python -m faceta.ops doctor
+PYTHONPATH=. python -m faceta.ops ano 2026 --de-mes 7 --ate-mes 7 --skip-insights
 ```
 
 | Comando | Uso |
@@ -18,6 +19,7 @@ PYTHONPATH=. python -m faceta.ops doctor
 | `health` | MySQL, Postgres/schema, contrato |
 | `status` | Gaps de fatos diários, cascata, insights, reconciliação |
 | `backfill` | Reingere intervalo; `--cascata` força semanal |
+| `ano` | Pipeline anual in-process (dims→diário→cascata→insights); ver README Hipótese I |
 | `metrics` | Latência por pipeline + `llm_calls` dos traces ask (meta ≤2) |
 | `doctor` | Checklist do manual §4 + health/metrics |
 

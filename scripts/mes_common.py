@@ -1,4 +1,7 @@
-"""Helpers compartilhados dos scripts de mês (YYYY-MM)."""
+"""Helpers compartilhados dos scripts de mês (YYYY-MM).
+
+Funções de calendário vivem em ``faceta.ops.calendario`` (também usadas por ``ops ano``).
+"""
 
 from __future__ import annotations
 
@@ -6,8 +9,19 @@ import argparse
 import os
 import subprocess
 import sys
-from datetime import date, timedelta
 from pathlib import Path
+
+from faceta.ops.calendario import (  # noqa: F401
+    days_in_month,
+    days_in_year,
+    iso_week_label,
+    iso_weeks_in_range,
+    iso_weeks_of_year,
+    iso_weeks_touching_month,
+    month_bounds,
+    semesters_in_range,
+    semesters_of_year,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,50 +37,6 @@ def parse_ano_mes(s: str) -> tuple[int, int]:
     if year < 2000 or year > 2100 or not (1 <= month <= 12):
         raise argparse.ArgumentTypeError("ano/mês fora do intervalo esperado")
     return year, month
-
-
-def month_bounds(year: int, month: int) -> tuple[date, date]:
-    """Retorna [primeiro, próximo_mês)."""
-    first = date(year, month, 1)
-    if month == 12:
-        nxt = date(year + 1, 1, 1)
-    else:
-        nxt = date(year, month + 1, 1)
-    return first, nxt
-
-
-def days_in_month(year: int, month: int) -> list[date]:
-    first, nxt = month_bounds(year, month)
-    out: list[date] = []
-    d = first
-    while d < nxt:
-        out.append(d)
-        d += timedelta(days=1)
-    return out
-
-
-def iso_week_label(d: date) -> str:
-    y, w, _ = d.isocalendar()
-    return f"{y}-W{w:02d}"
-
-
-def iso_weeks_touching_month(year: int, month: int) -> list[tuple[date, str]]:
-    """Segundas ISO + rótulo YYYY-Www das semanas que intersectam o mês."""
-    first, nxt = month_bounds(year, month)
-    last = nxt - timedelta(days=1)
-    monday = first - timedelta(days=first.weekday())
-    weeks: list[tuple[date, str]] = []
-    seen: set[str] = set()
-    d = monday
-    while d <= last:
-        week_end = d + timedelta(days=7)
-        if week_end > first and d < nxt:
-            label = iso_week_label(d)
-            if label not in seen:
-                seen.add(label)
-                weeks.append((d, label))
-        d += timedelta(days=7)
-    return weeks
 
 
 def entity_types_from_contrato() -> list[str]:

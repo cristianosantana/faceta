@@ -23,6 +23,13 @@ PYTHONPATH=. python scripts/mes_insights.py 2026-07         # train+run × todos
 # insights --force-llm só com FACETA_ALLOW_FORCE_LLM=1 (dev; nunca no cron)
 ```
 
+### Pipeline de um ano (preferido para histórico)
+```bash
+PYTHONPATH=. python -m faceta.ops ano 2026 --de-mes 7 --ate-mes 7 --skip-insights   # valida 1 mês
+PYTHONPATH=. python -m faceta.ops ano 2025 --continue-on-error
+```
+In-process (sem subprocess por dia). Detalhe: README § Hipótese I · `documentos/19-fase6-ops.md`.
+
 
 ## 2. Como Adicionar um Novo Tipo de Entidade (entity_type)
 1. Confirmar a qual família de fato a dimensão pertence (`fato_os` se for única por OS; se for multivalorada como serviço/pagamento, precisa de uma família própria nova — ver seção 3)
