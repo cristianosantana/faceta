@@ -10,6 +10,10 @@
 5. `python -m faceta.ops doctor` e `python -m faceta.ops metrics` — gaps, reconciliação, llm_calls≤2
 6. Perguntas via `python -m faceta.ask "…"` (motor + lookup de insights)
 
+### Schema / migrações destrutivas
+`apply_ddl` no caminho normal (ingest, cascata, backfill, insights) é **somente** `CREATE IF NOT EXISTS`.  
+Mudanças que droparm tabela vão em `python -m faceta.migrate up` (versionado, manual, uma vez por ambiente). Ver `README.md` § migração.
+
 ### Backfill por mês (`YYYY-MM`)
 ```bash
 PYTHONPATH=. python scripts/mes_ingest.py 2026-07

@@ -21,6 +21,8 @@ PYTHONPATH=. python -m faceta.ops doctor
 | `metrics` | Latência por pipeline + `llm_calls` dos traces ask (meta ≤2) |
 | `doctor` | Checklist do manual §4 + health/metrics |
 
+Schema destrutivo: **não** está em `apply_ddl`. Use `python -m faceta.migrate up` (ver README).
+
 ## Rotina sugerida (local)
 
 1. `ops health`  

@@ -45,64 +45,18 @@ def postgres_connect():
 
 
 def apply_ddl(conn: psycopg.Connection) -> None:
+    """Aplica apenas DDL idempotente (CREATE IF NOT EXISTS).
+
+    Drops / mudanças destrutivas NÃO entram aqui — use
+    ``python -m faceta.migrate up`` (migrações versionadas, manuais).
+    """
     sql_dir = Path(__file__).parent / "sql"
     ddl = (sql_dir / "ddl_diario.sql").read_text(encoding="utf-8")
     ddl_cascata = (sql_dir / "ddl_cascata.sql").read_text(encoding="utf-8")
+    ddl_insights = (sql_dir / "ddl_insights.sql").read_text(encoding="utf-8")
     with conn.cursor() as cur:
-        # Migrações destrutivas de schema Fase 1 (reprocessar dias afetados)
-        cur.execute(
-            """
-            SELECT 1 FROM information_schema.columns
-            WHERE table_schema = %s AND table_name = 'fato_comissao_diario'
-              AND column_name = 'beneficiario_id'
-            """,
-            (SCHEMA,),
-        )
-        if cur.fetchone():
-            cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.fato_comissao_diario CASCADE")
-
-        cur.execute(
-            """
-            SELECT 1 FROM information_schema.columns
-            WHERE table_schema = %s AND table_name = 'fato_os_servico_diario'
-              AND column_name = 'servico_id'
-            """,
-            (SCHEMA,),
-        )
-        if not cur.fetchone():
-            # tabela antiga sem servico_id, ou inexistente
-            cur.execute(
-                """
-                SELECT 1 FROM information_schema.tables
-                WHERE table_schema = %s AND table_name = 'fato_os_servico_diario'
-                """,
-                (SCHEMA,),
-            )
-            if cur.fetchone():
-                cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.fato_os_servico_diario CASCADE")
-
-        cur.execute(
-            """
-            SELECT 1 FROM information_schema.columns
-            WHERE table_schema = %s AND table_name = 'dim_familia_servico'
-              AND column_name = 'grupo_servico_id'
-            """,
-            (SCHEMA,),
-        )
-        has_grupo = cur.fetchone()
-        cur.execute(
-            """
-            SELECT 1 FROM information_schema.tables
-            WHERE table_schema = %s AND table_name = 'dim_familia_servico'
-            """,
-            (SCHEMA,),
-        )
-        if cur.fetchone() and not has_grupo:
-            cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.dim_familia_servico CASCADE")
-
         cur.execute(ddl)
         cur.execute(ddl_cascata)
-        ddl_insights = (sql_dir / "ddl_insights.sql").read_text(encoding="utf-8")
         cur.execute(ddl_insights)
     conn.commit()
 

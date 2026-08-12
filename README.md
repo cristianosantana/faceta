@@ -171,6 +171,18 @@ Exemplos ilustrativos (ajuste caminho do venv):
 
 Detalhes: `documentos/09-manual-operacional.md` · `documentos/14-fase2-cascata.md` · `documentos/19-fase6-ops.md`
 
+### Migração de schema (manual, versionada)
+
+`apply_ddl` (chamado no ingest/cascata) só faz **CREATE IF NOT EXISTS**. Drops destrutivos **não** rodam mais automaticamente.
+
+```bash
+PYTHONPATH=. .venv/bin/python -m faceta.migrate status
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up --dry-run
+PYTHONPATH=. .venv/bin/python -m faceta.migrate up    # aplica pendentes + recreate DDL seguro
+```
+
+Histórico em `memoria_materializada.schema_migrations`. Após um DROP, reingerir os dias afetados.
+
 ## Rodar ingestão
 
 ```bash
