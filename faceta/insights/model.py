@@ -10,7 +10,18 @@ import numpy as np
 from faceta.db import ROOT
 
 DEFAULT_WINDOW = 8
-MODELS_DIR = ROOT / "models" / "insights"
+
+
+def models_dir() -> Path:
+    """Diretório dos modelos; override via TF_MODEL_PATH."""
+    from faceta.db import load_env
+
+    load_env()
+    raw = os.getenv("TF_MODEL_PATH")
+    if raw:
+        p = Path(raw).expanduser()
+        return p if p.is_absolute() else (ROOT / p)
+    return ROOT / "models" / "insights"
 
 
 @dataclass
@@ -194,7 +205,7 @@ def train_autoencoder(
     X2d = np.concatenate(X_list, axis=0)
     model, backend = build_autoencoder(window)
 
-    out_dir = MODELS_DIR / f"{entity_type}_{granularidade}"
+    out_dir = models_dir() / f"{entity_type}_{granularidade}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if backend == "tf":
@@ -227,7 +238,7 @@ def train_autoencoder(
 
 
 def load_bundle(entity_type: str, granularidade: str) -> tuple[object, ModelBundle]:
-    out_dir = MODELS_DIR / f"{entity_type}_{granularidade}"
+    out_dir = models_dir() / f"{entity_type}_{granularidade}"
     meta_path = out_dir / "meta.json"
     if not meta_path.is_file():
         raise FileNotFoundError(
