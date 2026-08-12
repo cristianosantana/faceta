@@ -18,7 +18,7 @@ PYTHONPATH=. .venv/bin/python -m faceta.ingest --only-dims  # só dimensões
 | Tema | Decisão |
 |---|---|
 | Bancos | Dimensões: origem MySQL + snapshot Postgres `dim_*`. Fatos: só Postgres `memoria_materializada` |
-| Data do fato | **Evento por família** (criação / fechamento serviço / pagamento / comissão) — insert-only, sem UPDATE |
+| Data do fato | **Evento por família** (não o mesmo “dia”): `fato_os` = abertura `DATE(created_at)`; `fato_os_servico` = fechamento do item; `fato_os_pagamento` = pagamento; `fato_comissao` = `DATE(comissoes.created_at)`. Ver `10-dicionario-dados.md` §2.1 |
 | Idempotência | `DELETE` do dia D + `INSERT` por família |
 | `fato_os.valor_total` | Soma itens (`os_servicos` XOR `os_produtos`); `produtivo_id` sentinela `''` (produtivo real só em `fato_os_servico`); `empresa_id` via caixa |
 | `fato_os_servico` | Grão **serviço a serviço**: `servico_id` + `familia_servico_id` (= `subgrupos_servicos`, via `servicos.subgrupo_servico_id`) |

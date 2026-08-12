@@ -59,6 +59,28 @@ Resumo — DDL completo em `05-arquitetura-software-sad.md`, seções 3, 4 e 5.
 | `fato_os_pagamento` | 1 linha por combinação (dimensões + forma)/dia | + `forma_pagamento_id` | `valor_pago` | Sim (uma OS pode ter mais de uma forma de pagamento) |
 | `fato_comissao` | 1 linha por comissionado/tipo/dia | `comissionado_id`, `comissao_tipo_id` | `valor_comissao` | Ingerido pronto; nomes iguais ao MySQL |
 
+### 2.1 Semântica temporal — o `data` NÃO é “o mesmo dia” entre famílias
+
+Cada família filtra e materializa um **evento diferente** do ciclo de vida da OS. Comparar `fato_os` e `fato_os_pagamento` no mesmo `YYYY-MM-DD` **não** é “a mesma OS no mesmo momento”.
+
+| Família | Coluna `data` = | Filtro na origem (MySQL) | Significado de negócio |
+|---|---|---|---|
+| `fato_os` | dia de **abertura** | `DATE(os.created_at)` | OS criada / aberta naquele dia (`valor_total` dos itens vinculados) |
+| `fato_os_servico` | dia de **fechamento do item** | `DATE(COALESCE(os_servicos.data_fechamento, updated_at))` e `fechado = 1` | Serviço fechado / produção atribuída (inclui `produtivo_id`) |
+| `fato_os_pagamento` | dia de **pagamento** | `DATE(COALESCE(caixas.data_pagamento, os.data_pagamento))`, OS `paga = 1` | Caixa / valor que **entrou** naquele dia |
+| `fato_comissao` | dia de **geração da comissão** | `DATE(comissoes.created_at)` | Comissão materializada; regra de origem varia (geral costuma no pagamento; produtivo no fechamento do item) |
+
+Exemplos de pergunta → família certa:
+
+| Intenção | Exemplo | Família / entity_types típicos |
+|---|---|---|
+| Abertura / OS do período | “faturamento aberto hoje”, “quais vendedores abriram mais OS na semana” | `fato_os` → vendedor, concessionaria, departamento, empresa |
+| Produção / fechamento | “quanto o produtivo João fechou”, “serviços fechados no mês” | `fato_os_servico` → produtivo, servico, familia_servico |
+| Caixa / recebimento | “quanto entrou hoje”, “PIX da semana” | `fato_os_pagamento` → forma_pagamento |
+| Comissão gerada | “comissões do comissionado X no mês” | `fato_comissao` → comissionado, comissao_tipo |
+
+O prompt do entendimento (`faceta/ask/understand.py`) e o `contrato.yaml` (entity_type → fato) precisam manter essa distinção — granularidade certa com família errada responde o período certo na métrica errada.
+
 Cada família tem 5 tabelas (uma por granularidade: `_diario`, `_semanal`, `_mensal`, `_semestral`, `_anual`), mesma estrutura de colunas. Cascata: cada agregada soma o `_diario` no intervalo (não semana→mês); completude parcial; ver `14-fase2-cascata.md`.
 
 Nomes de dimensão resolvem via `dim_*` no Postgres (`faceta/query/dims.py`): o motor e o ask preenchem `entity_nome` / `quebra_nome` a partir dos IDs.

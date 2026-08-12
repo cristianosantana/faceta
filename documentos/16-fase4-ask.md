@@ -12,6 +12,8 @@
 
 Máximo **2** chamadas LLM.
 
+O prompt de entendimento (`faceta/ask/understand.py`) distingue a **semântica temporal** por família: abertura (`fato_os`), fechamento de item (`fato_os_servico`), pagamento (`fato_os_pagamento`), geração de comissão (`fato_comissao`). Detalhe: `10-dicionario-dados.md` §2.1.
+
 ## Env
 
 ```

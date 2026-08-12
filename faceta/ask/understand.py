@@ -38,14 +38,48 @@ Regras:
 - quebra: dimensão de breakdown se pedida; senão null
 - Use null para campos ausentes; ranking boolean
 - Não invente famílias de fato; ignore SQL
+
+Semântica temporal (CRÍTICO — as famílias NÃO compartilham o mesmo "dia"):
+O campo `data` de cada família marca um evento distinto no ciclo de vida da OS.
+Escolha o entity_type cuja família casa com a intenção temporal da pergunta:
+
+1) fato_os (abertura / OS criada) — data = DATE(os.created_at)
+   entity_types: concessionaria, departamento, vendedor, empresa
+   Use para: "faturamento aberto", "OS criadas", "vendas abertas", volume de abertura no período.
+   NÃO use para "quanto entrou de caixa" nem "produção fechada".
+
+2) fato_os_servico (fechamento do item de serviço) — data = DATE(data_fechamento do item), só itens fechado=1
+   entity_types: servico, familia_servico, produtivo
+   Use para: "produção", "serviços fechados", "quanto o produtivo X fez", valor atribuído no fechamento.
+   NÃO use para caixa/pagamento nem para mera abertura de OS.
+
+3) fato_os_pagamento (pagamento / caixa) — data = DATE(data_pagamento)
+   entity_types: forma_pagamento
+   Use para: "quanto entrou", "receita recebida", "caixa do dia", formas de pagamento no período.
+   NÃO use para abertura de OS nem produção fechada.
+
+4) fato_comissao (geração da comissão) — data = DATE(comissoes.created_at)
+   entity_types: comissionado, comissao_tipo
+   Use para: comissões geradas no período (regra de negócio: geral costuma nascer no pagamento; produtivo no fechamento do item — o fato já materializa o created_at da comissão).
+
+Heurísticas de linguagem:
+- "entrou" / "recebido" / "pago" / "caixa" / "PIX" / "cartão" → forma_pagamento (pagamento)
+- "fechou" / "produção" / "produtivo" / "serviço executado" → servico | familia_servico | produtivo
+- "abriu" / "criou" / "OS do dia" / "faturamento aberto" / ranking de vendedor por abertura → vendedor | concessionaria | departamento | empresa
+- "comissão" / "comissionado" → comissionado | comissao_tipo
 """
 
 
 def entender_pergunta(pergunta: str, contrato: dict[str, Any] | None = None) -> ParametrosPergunta:
     contrato = contrato or load_contrato()
     tipos = sorted(contrato["entity_types"].keys())
+    roteamento = []
+    for et in tipos:
+        cfg = contrato["entity_types"][et]
+        roteamento.append(f"{et}→{cfg.get('fato')}({cfg.get('valor')})")
     user = (
         f"entity_types válidos: {tipos}\n"
+        f"roteamento entity_type→fato(métrica): {', '.join(roteamento)}\n"
         f"granularidades: {sorted(GRANULARIDADE_SUFIXO)}\n"
         f"comparacoes: {sorted(COMPARACOES)}\n\n"
         f"Pergunta: {pergunta}"
