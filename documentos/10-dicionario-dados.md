@@ -53,8 +53,8 @@ Resumo — DDL completo em `05-arquitetura-software-sad.md`, seções 3, 4 e 5.
 
 | Família | Grão | Dimensões | Métrica | Multivalorada por OS? |
 |---|---|---|---|---|
-| `fato_os` | 1 linha por combinação única de dimensões/dia | concessionaria, departamento, vendedor, produtivo, empresa | `valor_total`, `quantidade_os` | Não |
-| `fato_os_servico` | 1 linha por combinação (dims + família + **serviço**)/dia | + `familia_servico_id` (`subgrupos_servicos`), + `servico_id` | `valor_atribuido`, `quantidade` | Sim; grão serviço a serviço |
+| `fato_os` | 1 linha por combinação única de dimensões/dia | concessionaria, departamento, vendedor, empresa (`produtivo_id` sentinela `''`) | `valor_total`, `quantidade_os` | Não |
+| `fato_os_servico` | 1 linha por combinação (dims + família + **serviço** + **produtivo**)/dia | + `familia_servico_id`, + `servico_id`, + `produtivo_id` real | `valor_atribuido`, `quantidade` | Sim; grão serviço a serviço |
 
 | `fato_os_pagamento` | 1 linha por combinação (dimensões + forma)/dia | + `forma_pagamento_id` | `valor_pago` | Sim (uma OS pode ter mais de uma forma de pagamento) |
 | `fato_comissao` | 1 linha por comissionado/tipo/dia | `comissionado_id`, `comissao_tipo_id` | `valor_comissao` | Ingerido pronto; nomes iguais ao MySQL |

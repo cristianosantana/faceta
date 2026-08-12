@@ -12,7 +12,8 @@
 | Contrato | **YAML versionado** | Allowlist de `entity_types`, famílias de fato, quebras e comparações válidas |
 
 ## 1. Visão Geral
-Uma OS tem dimensões de dois tipos: **únicas** (concessionária, departamento, vendedor, produtivo, empresa — sempre uma por OS) e **multivaloradas** (serviço e forma de pagamento — uma OS pode ter mais de um serviço e mais de uma forma de pagamento). Forçar tudo numa linha só, como no desenho anterior, soma valor errado sempre que uma OS tem mais de um serviço ou mais de uma forma de pagamento. A correção é separar em **três famílias de fato**, cada uma com sua própria cascata por tempo:
+Uma OS tem dimensões de dois tipos: **únicas por OS** (concessionária, departamento, vendedor, empresa) e **multivaloradas** (serviço, **produtivo** e forma de pagamento). O produtivo vem de `os_servicos.produtivo_id` (item a item): uma OS com dois serviços pode ter dois produtivos. Forçar tudo numa linha só soma valor errado sempre que uma OS tem mais de um serviço, produtivo ou forma de pagamento. A correção é separar em **três famílias de fato**, cada uma com sua própria cascata por tempo:
+
 
 ```mermaid
 flowchart LR
@@ -97,7 +98,8 @@ erDiagram
     FATO_OS ||--o{ FATO_COMISSAO : "gera cálculo de comissão"
 ```
 
-> As três famílias de fato (`FATO_OS`, `FATO_OS_SERVICO`, `FATO_OS_PAGAMENTO`) carregam as mesmas dimensões únicas (concessionária, departamento, vendedor, produtivo, empresa) de forma redundante — cada uma é autossuficiente para seu próprio `GROUP BY`, sem precisar de join entre elas. Em `FATO_OS_SERVICO`, `familia_servico_id` aponta para **`subgrupos_servicos`** (não `grupos_servicos`) e `servico_id` para o serviço unitário — grão serviço a serviço. `forma_pagamento_id` só existe em `FATO_OS_PAGAMENTO`. **Cruzar serviço com forma de pagamento** (ex.: "quanto de Filme Solar foi pago no PIX") não é suportado: confirmado que a origem no MySQL guarda serviços e formas de pagamento como duas listas independentes por OS, sem vínculo direto entre um serviço específico e uma forma específica — cruzar as duas exigiria alocar valor arbitrariamente, então essa combinação fica permanentemente fora do escopo, não é uma pendência a resolver.
+> As três famílias de fato (`FATO_OS`, `FATO_OS_SERVICO`, `FATO_OS_PAGAMENTO`) carregam concessionária, departamento, vendedor e empresa de forma redundante — cada uma é autossuficiente para seu próprio `GROUP BY`. Em `FATO_OS`, `produtivo_id` é sentinela `''` (produtivo **não** é único por OS). Em `FATO_OS_SERVICO`, `produtivo_id` vem de `os_servicos`, `familia_servico_id` aponta para **`subgrupos_servicos`** e `servico_id` para o serviço unitário. `forma_pagamento_id` só existe em `FATO_OS_PAGAMENTO`. **Cruzar serviço com forma de pagamento** (ex.: "quanto de Filme Solar foi pago no PIX") não é suportado: a origem guarda serviços e formas de pagamento como duas listas independentes por OS — cruzar as duas exigiria alocar valor arbitrariamente.
+
 
 ## 3. Camada 1 — Fatos Diários (três famílias, dimensões únicas redundantes)
 ```sql
@@ -163,13 +165,13 @@ Mapeamento confirmado no levantamento (`12-levantamento-fase-0.md`):
 ## 6. Camada 4 — Contrato (agora também roteia para a família de fato certa)
 ```yaml
 entity_types:
-  concessionaria: { fato: fato_os, coluna: concessionaria_id, valor: valor_total, quebras_validas: [departamento, vendedor, produtivo, empresa] }
+  concessionaria: { fato: fato_os, coluna: concessionaria_id, valor: valor_total, quebras_validas: [departamento, vendedor, empresa] }
   departamento:   { fato: fato_os, coluna: departamento_id,   valor: valor_total, quebras_validas: [concessionaria, vendedor, empresa] }
   vendedor:       { fato: fato_os, coluna: vendedor_id,       valor: valor_total, quebras_validas: [concessionaria, departamento, empresa] }
-  produtivo:      { fato: fato_os, coluna: produtivo_id,      valor: valor_total, quebras_validas: [concessionaria, departamento] }
+  produtivo:      { fato: fato_os_servico, coluna: produtivo_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, servico, familia_servico, vendedor, empresa] }
   empresa:        { fato: fato_os, coluna: empresa_id,        valor: valor_total, quebras_validas: [concessionaria, departamento, vendedor] }
-  familia_servico: { fato: fato_os_servico, coluna: familia_servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, servico] }
-  servico:        { fato: fato_os_servico, coluna: servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, familia_servico] }
+  familia_servico: { fato: fato_os_servico, coluna: familia_servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, servico, produtivo] }
+  servico:        { fato: fato_os_servico, coluna: servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, familia_servico, produtivo] }
   forma_pagamento: { fato: fato_os_pagamento, coluna: forma_pagamento_id, valor: valor_pago, quebras_validas: [concessionaria, departamento] }
   comissionado:   { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, quebras_validas: [comissao_tipo] }
   comissao_tipo:  { fato: fato_comissao, coluna: comissao_tipo_id, valor: valor_comissao, quebras_validas: [comissionado] }

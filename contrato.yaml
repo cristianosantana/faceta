@@ -3,7 +3,7 @@ entity_types:
     fato: fato_os
     coluna: concessionaria_id
     valor: valor_total
-    quebras_validas: [departamento, vendedor, produtivo, empresa]
+    quebras_validas: [departamento, vendedor, empresa]
   departamento:
     fato: fato_os
     coluna: departamento_id
@@ -14,11 +14,12 @@ entity_types:
     coluna: vendedor_id
     valor: valor_total
     quebras_validas: [concessionaria, departamento, empresa]
+  # produtivo é por item de serviço (os_servicos), não único por OS — vive em fato_os_servico
   produtivo:
-    fato: fato_os
+    fato: fato_os_servico
     coluna: produtivo_id
-    valor: valor_total
-    quebras_validas: [concessionaria, departamento]
+    valor: valor_atribuido
+    quebras_validas: [concessionaria, departamento, servico, familia_servico, vendedor, empresa]
   empresa:
     fato: fato_os
     coluna: empresa_id
@@ -28,12 +29,12 @@ entity_types:
     fato: fato_os_servico
     coluna: familia_servico_id
     valor: valor_atribuido
-    quebras_validas: [concessionaria, departamento, servico]
+    quebras_validas: [concessionaria, departamento, servico, produtivo]
   servico:
     fato: fato_os_servico
     coluna: servico_id
     valor: valor_atribuido
-    quebras_validas: [concessionaria, departamento, familia_servico]
+    quebras_validas: [concessionaria, departamento, familia_servico, produtivo]
   forma_pagamento:
     fato: fato_os_pagamento
     coluna: forma_pagamento_id

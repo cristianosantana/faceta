@@ -6,7 +6,7 @@
 - **Analista de negócio:** define quais dimensões, quebras e comparações são válidas via contrato
 
 ## Épico 1 — Ingestão das Três Famílias de Fato + Comissão
-- **US01** Como engenheiro de dados, quero ingerir diariamente o cabeçalho de cada OS em `fato_os` (concessionária, departamento, vendedor, produtivo, empresa, valor total), para ter a base das dimensões que são sempre únicas por OS.
+- **US01** Como engenheiro de dados, quero ingerir diariamente o cabeçalho de cada OS em `fato_os` (concessionária, departamento, vendedor, empresa, valor total; `produtivo_id` sentinela), para ter a base das dimensões únicas por OS.
 - **US02** Como engenheiro de dados, quero ingerir diariamente os itens de serviço de cada OS em `fato_os_servico` **por `servico_id`** (com `familia_servico_id` = subgrupo), para responder perguntas por serviço unitário e por família sem perder valor.
 - **US04** Como engenheiro de dados, quero ingerir as comissões já calculadas (`comissionado_id`, `comissao_tipo_id`) das tabelas de origem do MySQL, para não precisar reimplementar as regras de comissão.
 - **US05** Como sistema, quero validar que a soma dos itens de serviço e de pagamento bate com o valor total da OS na ingestão, para sinalizar divergência de dado cedo.

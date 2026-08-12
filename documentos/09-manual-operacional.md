@@ -25,8 +25,8 @@ PYTHONPATH=. python scripts/mes_insights.py 2026-07         # train+run × todos
 3. Validar com uma consulta de teste ao motor genérico (TC05 do plano de testes) antes de liberar para perguntas reais
 
 ## 3. Como Adicionar uma Nova Dimensão
-**Se a dimensão é sempre única por OS** (como concessionária, departamento, vendedor, produtivo): adicionar a coluna em `fato_os` e em todas as tabelas de cascata dessa família.
-**Se a dimensão pode ser múltipla por OS** (como serviço, pagamento): criar uma nova família de fato (`fato_os_<dimensao>`), com as dimensões únicas replicadas mais a nova dimensão, e sua própria cascata por tempo — mesma estrutura de `fato_os_servico`.
+**Se a dimensão é sempre única por OS** (como concessionária, departamento, vendedor, empresa): adicionar a coluna em `fato_os` e em todas as tabelas de cascata dessa família.
+**Se a dimensão pode ser múltipla por OS** (como serviço, **produtivo**, pagamento): criar/usar família de fato no grão certo (`fato_os_servico` / `fato_os_pagamento`), com as dimensões únicas replicadas mais a dimensão multivalorada — e sua própria cascata por tempo.
 Em ambos os casos:
 1. Confirmar que a dimensão já existe como tabela cadastral no MySQL com ID estável
 2. Adicionar a dimensão ao mapa fixo `DIMENSAO_TO_COLUNA` do motor genérico — sem essa entrada, a dimensão nunca pode ser usada em consulta, por segurança
