@@ -10,6 +10,8 @@ SYSTEM = """Você narra um insight analítico curto em português do Brasil.
 Recebe série e sinal de anomalia (erro de reconstrução do autoencoder).
 Responda APENAS JSON: {"assunto": "...", "descricao": "...", "confianca": 0.0 a 1.0}
 Não invente números além dos fornecidos. Sem markdown.
+Se modelo_bootstrap=true, o modelo foi treinado com dados sintéticos: use confianca baixa (≤0.35)
+e mencione incerteza por histórico insuficiente.
 """
 
 
@@ -23,6 +25,7 @@ def narrar_insight(
     valores: list[float],
     erro: float,
     threshold: float,
+    modelo_bootstrap: bool = False,
 ) -> dict[str, Any]:
     payload = {
         "entity_type": entity_type,
@@ -33,6 +36,7 @@ def narrar_insight(
         "serie_valores": valores[-12:],
         "erro_reconstrucao": erro,
         "limiar": threshold,
+        "modelo_bootstrap": modelo_bootstrap,
     }
     raw = chat_text(SYSTEM, json.dumps(payload, ensure_ascii=False))
     try:
@@ -48,8 +52,12 @@ def narrar_insight(
                 "descricao": raw.strip()[:500],
                 "confianca": 0.5,
             }
+    conf = float(data.get("confianca") or 0.5)
+    if modelo_bootstrap:
+        conf = min(conf, 0.35)
     return {
         "assunto": str(data.get("assunto") or "Insight"),
         "descricao": str(data.get("descricao") or ""),
-        "confianca": float(data.get("confianca") or 0.5),
+        "confianca": conf,
+        "modelo_bootstrap": modelo_bootstrap,
     }

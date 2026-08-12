@@ -26,6 +26,22 @@ class DetectResult:
     sinal: bool
     insight_gravado: bool
     hipotese: dict[str, Any] | None = None
+    modelo_bootstrap: bool = False
+
+
+def _marcar_hipotese_bootstrap(hipotese: dict[str, Any]) -> dict[str, Any]:
+    """Flag + confiança reduzida quando o AE foi treinado com ruído sintético."""
+    out = dict(hipotese)
+    out["modelo_bootstrap"] = True
+    conf = float(out.get("confianca") or 0.5)
+    out["confianca"] = min(conf, 0.35)
+    aviso = (
+        "[AVISO: modelo treinado com bootstrap sintético — confiança reduzida] "
+    )
+    desc = str(out.get("descricao") or "")
+    if "bootstrap sintético" not in desc:
+        out["descricao"] = aviso + desc
+    return out
 
 
 def train_job(
@@ -53,6 +69,8 @@ def train_job(
             "path": str(bundle.path),
             "threshold": bundle.threshold,
             "window": bundle.window,
+            "trained_with_bootstrap": bundle.trained_with_bootstrap,
+            "backend": bundle.backend,
         }
 
 
@@ -112,6 +130,7 @@ def run_job(
                                 valores=s.valores(),
                                 erro=erro,
                                 threshold=bundle.threshold,
+                                modelo_bootstrap=bundle.trained_with_bootstrap,
                             )
                     else:
                         hipotese = {
@@ -119,6 +138,8 @@ def run_job(
                             "descricao": f"erro={erro:.6f} limiar={bundle.threshold:.6f}",
                             "confianca": 0.7,
                         }
+                    if bundle.trained_with_bootstrap:
+                        hipotese = _marcar_hipotese_bootstrap(hipotese)
                     with span("upsert_insight"):
                         upsert_insight(
                             pg,
@@ -138,6 +159,7 @@ def run_job(
                         sinal=sinal,
                         insight_gravado=gravado,
                         hipotese=hipotese,
+                        modelo_bootstrap=bundle.trained_with_bootstrap,
                     )
                 )
         return results

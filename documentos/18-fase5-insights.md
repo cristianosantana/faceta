@@ -21,6 +21,10 @@ PYTHONPATH=. python -m faceta.insights tc
 
 Prefere **TensorFlow** quando instalável. No Python 3.14 (sem wheel TF) usa **autoencoder NumPy** equivalente. Modelos em `models/insights/` (gitignored).
 
+### Bootstrap sintético (dev only)
+
+Se a série real mais longa tiver **&lt; 3 pontos**, o treino usa `_bootstrap_series` (ruído gaussiano) para conseguir janelas. Isso grava `trained_with_bootstrap: true` em `meta.json`, imprime alerta forte em **stderr** no `train` e no `run`, e todo insight gerado leva `hipotese.modelo_bootstrap=true` com `confianca` limitada (≤0.35). **Re-treine** quando houver histórico real antes de confiar nos insights.
+
 ## Tabela
 
 `memoria_materializada.insights` — PK (entity_type, entity_id, granularidade, periodo, quebra)

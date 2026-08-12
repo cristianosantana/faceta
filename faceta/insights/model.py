@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,6 +31,21 @@ class ModelBundle:
     window: int
     threshold: float
     backend: str  # tf | numpy
+    trained_with_bootstrap: bool = False
+
+
+def _warn_bootstrap(context: str, *, entity_type: str, granularidade: str) -> None:
+    msg = (
+        "\n"
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+        f"ALERTA INSIGHTS [{context}]: modelo com BOOTSTRAP SINTÉTICO\n"
+        f"  entity_type={entity_type} granularidade={granularidade}\n"
+        "  Séries reais tinham < 3 pontos; treino usou ruído gaussiano.\n"
+        "  Insights daí têm confiança inflada / não use em produção\n"
+        "  até re-treinar com histórico real suficiente.\n"
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    )
+    print(msg, file=sys.stderr, flush=True)
 
 
 def _try_tf():
@@ -158,7 +174,11 @@ def _bootstrap_series(
     *,
     target_len: int = 12,
 ) -> list[list[float]]:
-    """Amplia séries curtas com ruído para permitir treino inicial (dev/demo)."""
+    """Amplia séries curtas com ruído para permitir treino inicial (dev/demo).
+
+    NÃO usar o modelo resultante como fonte confiável de insight em produção —
+    ver meta ``trained_with_bootstrap`` e alertas em stderr.
+    """
     rng = np.random.default_rng(7)
     out: list[list[float]] = []
     for vals in series_valores:
@@ -187,12 +207,17 @@ def train_autoencoder(
     lens = [len(v) for v in series_valores if v]
     if not lens:
         raise RuntimeError("nenhuma série com dados para treino")
-    max_len = max(lens)
-    if max_len < 3:
+    max_len_real = max(lens)
+    trained_with_bootstrap = False
+    if max_len_real < 3:
         # bootstrap: gera variações sintéticas a partir dos pontos existentes
+        trained_with_bootstrap = True
+        _warn_bootstrap("train", entity_type=entity_type, granularidade=granularidade)
         series_valores = _bootstrap_series(series_valores, target_len=max(window, 12))
         lens = [len(v) for v in series_valores]
         max_len = max(lens)
+    else:
+        max_len = max_len_real
     window = min(window, max_len)
     window = max(3, window)
 
@@ -232,9 +257,17 @@ def train_autoencoder(
         "p95_treino": p95,
         "n_windows": int(len(X2d)),
         "backend": backend,
+        "trained_with_bootstrap": trained_with_bootstrap,
+        "max_serie_len_real": max_len_real,
     }
     (out_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
-    return ModelBundle(path=out_dir, window=window, threshold=threshold, backend=backend)
+    return ModelBundle(
+        path=out_dir,
+        window=window,
+        threshold=threshold,
+        backend=backend,
+        trained_with_bootstrap=trained_with_bootstrap,
+    )
 
 
 def load_bundle(entity_type: str, granularidade: str) -> tuple[object, ModelBundle]:
@@ -246,6 +279,9 @@ def load_bundle(entity_type: str, granularidade: str) -> tuple[object, ModelBund
         )
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     backend = meta.get("backend", "tf")
+    trained_with_bootstrap = bool(meta.get("trained_with_bootstrap", False))
+    if trained_with_bootstrap:
+        _warn_bootstrap("load/run", entity_type=entity_type, granularidade=granularidade)
     if backend == "numpy" or not (out_dir / "autoencoder.keras").is_file():
         model = NumpyAutoencoder.load(out_dir / "autoencoder.npz")
         backend = "numpy"
@@ -259,6 +295,7 @@ def load_bundle(entity_type: str, granularidade: str) -> tuple[object, ModelBund
         window=int(meta["window"]),
         threshold=float(meta["threshold"]),
         backend=backend,
+        trained_with_bootstrap=trained_with_bootstrap,
     )
     return model, bundle
 
