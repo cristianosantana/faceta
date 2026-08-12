@@ -39,7 +39,7 @@ O pipeline atual do Orion (`intent.interpret → fact.plan → fact.resolve → 
 - As dimensões cadastrais já existem no MySQL de origem com IDs estáveis
 - Vendedor é único por OS; **produtivo** é por item de serviço (`os_servicos`); serviço e forma de pagamento são multivalorados por OS
 - A origem tem itemização de serviços e de formas de pagamento por OS, mas como duas listas independentes, sem vínculo direto entre um serviço e uma forma de pagamento específicos
-- Comissões já existem calculadas em tabelas próprias no MySQL — não são calculadas por este projeto
+- Comissões: componentes pré-calculados no MySQL; este projeto só aplica a **soma simples** em `valor_comissao` (não recalcula percentual/faixa)
 - O destino dos fatos agregados é Postgres, em tabelas separadas por família de fato e granularidade
 
 ## 6. Restrições

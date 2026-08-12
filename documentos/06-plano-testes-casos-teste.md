@@ -28,7 +28,7 @@
 | TC12 | Idempotência da ingestão | Reexecutar a ingestão do mesmo dia duas vezes, nas quatro famílias | Nenhuma duplicação de linhas |
 | TC13 | Reexecução sem `--force` não sobrescreve; com `--force` reinsere | Rodar cascata do mesmo período duas vezes sem `--force`; depois com `--force` | Segunda sem force: skip; com force: totais iguais aos diários, sem duplicar |
 | TC14 | Backfill de dia faltante | Simular ausência de um dia; reexecutar o cron diário só para esse dia | Linha do dia inserida corretamente; cron semanal que dependia dela passa a poder rodar |
-| TC15 | Comissão ingerida sem recálculo | Comparar valor de comissão em `fato_comissao` com o valor na tabela de origem do MySQL | Valores idênticos, sem transformação de regra aplicada pelo pipeline |
+| TC15 | Comissão = soma dos componentes da origem | Comparar `fato_comissao.valor_comissao` com `SUM(valor_dentro+valor_fora+valor_combo+valor_compensado_permuta+comissao_couro)` agregado no MySQL no mesmo dia/chave | Valores idênticos; **sem** percentual/faixa — só a soma simples documentada (RF04) |
 | TC16 | Insight não gerado em ausência de sinal do modelo | Série reconstruída com variação dentro do padrão previsto pelo modelo TensorFlow | Nenhuma chamada a LLM realizada; nenhuma linha nova em `insights` |
 | TC17 | Insight gerado quando o modelo sinaliza | Série reconstruída com erro de reconstrução/previsão acima do limiar configurado | Uma chamada a LLM realizada; hipótese cacheada em `insights` |
 

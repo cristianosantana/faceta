@@ -23,7 +23,7 @@ Reduzir o custo por pergunta respondida e a latência de resposta, sem perder a 
 | RN06 | O custo de geração de insights (uso de LLM para narração) deve ser incorrido em lote, não por pergunta de usuário |
 | RN07 | O sistema deve reaproveitar as tabelas cadastrais já existentes (departamento, concessionária, família de serviço, vendedor, produtivo, forma de pagamento, empresa) como fonte de verdade para IDs e nomes de dimensão |
 | RN08 | Como as perguntas dos usuários são imprevisíveis, o sistema deve usar LLM para entender a pergunta e decidir os parâmetros da consulta ao motor genérico — o LLM não recalcula fato, apenas decide o que consultar e narra o resultado |
-| RN09 | O sistema deve ingerir as comissões já calculadas nas tabelas de origem do MySQL, sem recalculá-las |
+| RN09 | O sistema deve ingerir comissões a partir das tabelas de origem do MySQL: componentes já pré-calculados pela origem, com **soma simples** na ingestão para formar `valor_comissao` — sem recalcular regras de percentual/faixa |
 | RN10 | O sistema não precisa responder perguntas que cruzem serviço com forma de pagamento, já que a origem não vincula os dois no nível da OS |
 
 ## 5. Fora de Escopo

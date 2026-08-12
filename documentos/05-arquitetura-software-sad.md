@@ -142,8 +142,8 @@ fato_comissao_*        ← idem a partir de fato_comissao_diario
 ```
 Completude **parcial** (soma os dias presentes). Default **insert-only**; `--force` reinsere o período. Detalhe: `14-fase2-cascata.md`.
 
-## 5. Camada 3 — Fato de Comissão (ingerido, não calculado)
-Diferente do que parecia inicialmente, comissão **não precisa ser calculada por este projeto** — já existem tabelas de comissão prontas no MySQL de origem. `fato_comissao` é só mais um alvo de ingestão, igual a `fato_os`:
+## 5. Camada 3 — Fato de Comissão (componentes da origem + soma simples)
+Comissão **não é recalculada** por percentual/faixa neste projeto — os componentes já existem em `comissoes` no MySQL. A ingestão aplica apenas a **soma simples** desses campos em `valor_comissao` (RF04). `fato_comissao` é alvo de ingestão com o mesmo padrão de idempotência de `fato_os`:
 ```sql
 CREATE TABLE fato_comissao_diario (
     data DATE NOT NULL,
@@ -153,12 +153,12 @@ CREATE TABLE fato_comissao_diario (
     PRIMARY KEY (data, comissionado_id, comissao_tipo_id)
 );
 ```
-O cron de ingestão lê `comissoes` no MySQL (satélites: `comissao_tipos`, `comissao_periodos`, `comissao_pagamentos`) e insere aqui, mesmo padrão de idempotência de `fato_os`. Cascata por tempo se aplica do mesmo jeito.
+O cron lê `comissoes` (satélites: `comissao_tipos`, `comissao_periodos`, `comissao_pagamentos`) e grava aqui. Cascata por tempo se aplica do mesmo jeito.
 
 Mapeamento confirmado no levantamento (`12-levantamento-fase-0.md`):
 - `comissionado_id` ← `comissoes.comissionado_id` (mesmo nome da origem)
 - `comissao_tipo_id` ← `comissoes.comissao_tipo_id` (sempre preenchido quando há comissionado; **não** derivar de `funcionario_tipos`/cargo — concessionária/indicador não têm cargo)
-- `valor_comissao` ← `COALESCE(valor_dentro,0)+COALESCE(valor_fora,0)+COALESCE(valor_combo,0)+COALESCE(valor_compensado_permuta,0)+COALESCE(comissao_couro,0)`
+- `valor_comissao` ← soma simples dos componentes pré-calculados: `COALESCE(valor_dentro,0)+COALESCE(valor_fora,0)+COALESCE(valor_combo,0)+COALESCE(valor_compensado_permuta,0)+COALESCE(comissao_couro,0)` — **não** é “zero transformação”, mas também **não** é recálculo de regra de negócio
 - Momento: comissão geral no **pagamento**; comissão do **produtivo** ao **fechar itens** — OS fechada sem comissão é esperado; não assumir 1:1 com fechada derivada
 - Estados da OS para ingestão: ver `10-dicionario-dados.md` (paga / fechada derivada / cancelada por flag; `paga=1` sem `caixas` é inconsistência); não usar `os.finalizada` como paga∩fechada
 

@@ -57,7 +57,7 @@ Resumo — DDL completo em `05-arquitetura-software-sad.md`, seções 3, 4 e 5.
 | `fato_os_servico` | 1 linha por combinação (dims + família + **serviço** + **produtivo**)/dia | + `familia_servico_id`, + `servico_id`, + `produtivo_id` real | `valor_atribuido`, `quantidade` | Sim; grão serviço a serviço |
 
 | `fato_os_pagamento` | 1 linha por combinação (dimensões + forma)/dia | + `forma_pagamento_id` | `valor_pago` | Sim (uma OS pode ter mais de uma forma de pagamento) |
-| `fato_comissao` | 1 linha por comissionado/tipo/dia | `comissionado_id`, `comissao_tipo_id` | `valor_comissao` | Ingerido pronto; nomes iguais ao MySQL |
+| `fato_comissao` | 1 linha por comissionado/tipo/dia | `comissionado_id`, `comissao_tipo_id` | `valor_comissao` | Componentes pré-calculados na origem; ingestão = **soma simples** (ver §2.2) |
 
 ### 2.1 Semântica temporal — o `data` NÃO é “o mesmo dia” entre famílias
 
@@ -80,6 +80,17 @@ Exemplos de pergunta → família certa:
 | Comissão gerada | “comissões do comissionado X no mês” | `fato_comissao` → comissionado, comissao_tipo |
 
 O prompt do entendimento (`faceta/ask/understand.py`) e o `contrato.yaml` (entity_type → fato) precisam manter essa distinção — granularidade certa com família errada responde o período certo na métrica errada.
+
+### 2.2 `fato_comissao.valor_comissao` — soma simples, não “zero transformação”
+
+A origem (`comissoes`) já traz os **componentes** pré-calculados. A ingestão **não** aplica percentual, faixa nem regra de cargo — só soma:
+
+```
+valor_comissao = COALESCE(valor_dentro,0) + COALESCE(valor_fora,0) + COALESCE(valor_combo,0)
+               + COALESCE(valor_compensado_permuta,0) + COALESCE(comissao_couro,0)
+```
+
+(código: `faceta/ingest/fato_comissao.py`). Agregação por `(data, comissionado_id, comissao_tipo_id)` no dia. RF04 / RN09 descrevem exatamente isso — não “cópia bit-a-bit de uma coluna única”.
 
 Cada família tem 5 tabelas (uma por granularidade: `_diario`, `_semanal`, `_mensal`, `_semestral`, `_anual`), mesma estrutura de colunas. Cascata: cada agregada soma o `_diario` no intervalo (não semana→mês); completude parcial; ver `14-fase2-cascata.md`.
 

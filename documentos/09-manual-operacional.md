@@ -45,7 +45,7 @@ Em ambos os casos:
 | Valores duplicados/incorretos em qualquer fato diário | Ingestão não idempotente ou reprocessamento indevido | Verificar chave primária composta e lógica de reexecução |
 | `insights` sempre vazio para um `entity_type` | Job de insights não está reconstruindo série pra esse tipo, ou limiar de detecção alto demais | Revisar `INSIGHT_DETECTION_THRESHOLD` e se o `entity_type` está incluído no job |
 | Semana/mês com dado incompleto | Ingestão diária não rodou para algum dia | Cascata aceita parcial (soma o que houver); para completar, reingerir o dia faltante e rodar cascata com `--force` no período |
-| Comissão divergente da origem | Job de ingestão aplicando alguma transformação indevida | Comissão deve ser cópia direta — nenhuma regra de cálculo deve existir neste pipeline (RF04) |
+| Comissão divergente da origem | Soma dos componentes ≠ expectativa, ou filtro de dia/tipo | Conferir fórmula RF04 (`valor_dentro+…+comissao_couro`) e `DATE(comissoes.created_at)`; **não** deve haver percentual/faixa neste pipeline |
 | Custo de LLM acima do esperado | Modelo de detecção disparando com frequência maior que o previsto, ou perguntas gerando mais de 2 chamadas | Revisar limiar do modelo de detecção; auditar entendimento de pergunta e narração |
 
 ## 5. Monitoramento Recomendado

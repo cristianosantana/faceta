@@ -15,7 +15,10 @@ FORMULA = (
 
 
 def ingest_fato_comissao(mysql, pg, dia: date) -> int:
-    """Tipo vem de comissoes.comissao_tipo_id (sempre presente quando há comissionado_id)."""
+    """Componentes pré-calculados na origem; valor_comissao = soma simples (RF04).
+
+    Tipo vem de comissoes.comissao_tipo_id (sempre presente quando há comissionado_id).
+    """
     clear_day(pg, "fato_comissao_diario", dia)
     sql = f"""
     SELECT
