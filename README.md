@@ -125,7 +125,7 @@ Depois do backfill, complete mensal / semestral / anual à mão (o flag `--casca
 | Só comissão | `--familia comissao` no ingest e na cascata |
 | Agregada já existe e precisa refazer | cascata com `--force` |
 | Agregada existe e pode pular | cascata sem `--force` (insert-only / skip) |
-| Insights sem sinal / pouco histórico | `insights run ... --force-llm` (gera LLM mesmo assim) |
+| Insights sem sinal / pouco histórico | Só em **dev**: `FACETA_ALLOW_FORCE_LLM=1 … insights run --force-llm` (bloqueado sem o env — não use em cron) |
 | Só treinar modelo | `insights train --entity-type … --granularidade semanal` |
 
 Ordem de `--force` após corrigir um dia `D`:
@@ -147,7 +147,7 @@ PYTHONPATH=. .venv/bin/python scripts/mes_cascata.py 2026-07
 # completar granularidades altas (ainda fora do script de mês):
 PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade semestral --periodo 2026-07-01 --force
 PYTHONPATH=. .venv/bin/python -m faceta.cascata --granularidade anual     --periodo 2026-07-01 --force
-PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --force-llm --limit 5
+FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --force-llm --limit 5
 PYTHONPATH=. .venv/bin/python -m faceta.ops doctor
 PYTHONPATH=. .venv/bin/python -m faceta.ask "Quais vendedores mais venderam na semana 2026-W31?"
 ```

@@ -84,12 +84,31 @@ def run_job(
     force_llm: bool = False,
     limit: int | None = None,
 ) -> list[DetectResult]:
-    """Detecta anomalias; LLM só se sinal (US17)."""
+    """Detecta anomalias; LLM só se sinal (US17).
+
+    ``force_llm`` só funciona com ``FACETA_ALLOW_FORCE_LLM=1`` (dev/testes).
+    """
+    if force_llm:
+        from faceta.db import load_env
+        import os
+
+        load_env()
+        if os.getenv("FACETA_ALLOW_FORCE_LLM", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            raise RuntimeError(
+                "force_llm bloqueado: defina FACETA_ALLOW_FORCE_LLM=1 "
+                "(apenas testes manuais — não use em cron de produção)"
+            )
+
     with trace_run(
         "insights_run",
         entity_type=entity_type,
         granularidade=granularidade,
         periodo=periodo,
+        force_llm=force_llm,
     ):
         apply_ddl(pg)
         periodo_key = parse_periodo(periodo, granularidade).isoformat()

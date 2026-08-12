@@ -2,11 +2,27 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
-from faceta.db import postgres_connect
+from faceta.db import load_env, postgres_connect
 from faceta.insights.job import run_job, train_job
 from faceta.insights.tc import run_tc
+
+
+def _assert_force_llm_allowed() -> None:
+    """--force-llm é só para testes manuais; exige opt-in explícito de ambiente."""
+    load_env()
+    if os.getenv("FACETA_ALLOW_FORCE_LLM", "").strip().lower() in ("1", "true", "yes"):
+        return
+    print(
+        "ERRO: --force-llm é exclusivo de desenvolvimento/testes manuais.\n"
+        "Para liberar (nunca em cron de produção):\n"
+        "  FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. python -m faceta.insights run ... --force-llm\n"
+        "Sem esse env, a flag é rejeitada — evita insight forçado por engano no cron.",
+        file=sys.stderr,
+    )
+    raise SystemExit(2)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,7 +43,10 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument(
         "--force-llm",
         action="store_true",
-        help="Força sinal+LLM (útil p/ gerar 1 insight real com pouco histórico)",
+        help=(
+            "DEV ONLY: força sinal+LLM sem anomalia real. "
+            "Exige FACETA_ALLOW_FORCE_LLM=1 — bloqueado em produção/cron."
+        ),
     )
     run.add_argument("--limit", type=int, default=None, help="Limita N entidades (após ordenar por valor)")
 
@@ -50,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(info, ensure_ascii=False, indent=2))
             return 0
         if args.cmd == "run":
+            if args.force_llm:
+                _assert_force_llm_allowed()
             results = run_job(
                 pg,
                 entity_type=args.entity_type,

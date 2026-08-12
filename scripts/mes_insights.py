@@ -5,7 +5,7 @@ Cobre todos os entity_types do contrato.yaml (ex.: vendedor, servico, …).
 
 Ex.:
   PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07
-  PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --force-llm --limit 5
+  FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --force-llm --limit 5
   PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --entity-type vendedor,servico
   PYTHONPATH=. .venv/bin/python scripts/mes_insights.py 2026-07 --dry-run
 """
@@ -43,7 +43,11 @@ def main(argv: list[str] | None = None) -> int:
         default="semanal",
         help="Default: semanal",
     )
-    parser.add_argument("--force-llm", action="store_true")
+    parser.add_argument(
+        "--force-llm",
+        action="store_true",
+        help="DEV ONLY: exige FACETA_ALLOW_FORCE_LLM=1 (não use em cron)",
+    )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument(
         "--skip-train",
@@ -52,6 +56,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     year, month = args.ano_mes
+
+    if args.force_llm:
+        import os
+
+        from dotenv import load_dotenv
+
+        load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+        if os.getenv("FACETA_ALLOW_FORCE_LLM", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            print(
+                "ERRO: --force-llm exige FACETA_ALLOW_FORCE_LLM=1 "
+                "(não use em cron de produção).",
+                file=sys.stderr,
+            )
+            return 2
 
     if args.entity_type:
         entities = [x.strip() for x in args.entity_type.split(",") if x.strip()]

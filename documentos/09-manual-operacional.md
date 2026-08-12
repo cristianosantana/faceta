@@ -19,7 +19,8 @@ Mudanças que droparm tabela vão em `python -m faceta.migrate up` (versionado, 
 PYTHONPATH=. python scripts/mes_ingest.py 2026-07
 PYTHONPATH=. python scripts/mes_cascata.py 2026-07          # semanal (semanas do mês) + mensal
 PYTHONPATH=. python scripts/mes_insights.py 2026-07         # train+run × todos entity_types × semanas
-# --dry-run em qualquer um; cascata --force; insights --force-llm --limit 5 --entity-type vendedor,servico
+# --dry-run em qualquer um; cascata --force
+# insights --force-llm só com FACETA_ALLOW_FORCE_LLM=1 (dev; nunca no cron)
 ```
 
 

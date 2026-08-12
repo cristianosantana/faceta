@@ -13,7 +13,9 @@
 ```bash
 PYTHONPATH=. python -m faceta.insights train --entity-type vendedor --granularidade semanal
 PYTHONPATH=. python -m faceta.insights run --entity-type vendedor --granularidade semanal --periodo 2026-W31
-PYTHONPATH=. python -m faceta.insights run ... --force-llm   # gera insight mesmo com pouco histórico
+PYTHONPATH=. python -m faceta.insights run ... --force-llm
+# ↑ bloqueado sem FACETA_ALLOW_FORCE_LLM=1 (dev only — não usar em cron)
+FACETA_ALLOW_FORCE_LLM=1 PYTHONPATH=. python -m faceta.insights run ... --force-llm
 PYTHONPATH=. python -m faceta.insights tc
 ```
 
