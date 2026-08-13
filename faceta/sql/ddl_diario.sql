@@ -131,6 +131,13 @@ CREATE TABLE IF NOT EXISTS memoria_materializada.dim_comissao_tipo (
     synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS memoria_materializada.dim_indicador (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    ativo BOOLEAN,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS memoria_materializada.dim_servico (
     id TEXT PRIMARY KEY,
     nome TEXT NOT NULL,

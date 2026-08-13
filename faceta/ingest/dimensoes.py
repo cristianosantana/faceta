@@ -46,6 +46,11 @@ DIM_SPECS = [
         "cols": ("id", "nome", "ativo"),
     },
     {
+        "pg": "dim_indicador",
+        "sql": "SELECT id, nome, ativo FROM indicadores",
+        "cols": ("id", "nome", "ativo"),
+    },
+    {
         "pg": "dim_servico",
         "sql": (
             "SELECT id, nome, subgrupo_servico_id AS familia_servico_id, ativo FROM servicos"

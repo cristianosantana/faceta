@@ -30,7 +30,9 @@ PYTHONPATH=. python -m faceta.query \
 
 ## Entity types
 
-Inclui dims de OS/serviço/pagamento e **`comissionado` / `comissao_tipo`** → `fato_comissao`.  
+Inclui dims de OS/serviço/pagamento e comissões polimórficas:
+`comissao_vendedor` / `comissao_produtivo` / `comissao_concessionaria` / `comissao_indicador`
+(via `filtro_fixo.comissao_tipo_id`) e `comissao_tipo` → `fato_comissao`.
 Bloqueio: `servico` × `forma_pagamento` (e família × forma).
 
 ## Verificação

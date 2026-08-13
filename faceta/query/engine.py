@@ -7,6 +7,7 @@ from typing import Any
 from faceta.db import SCHEMA
 from faceta.query.contract import (
     coluna_dimensao,
+    filtro_fixo_params,
     load_contrato,
     tabela_fato,
     validar_consulta,
@@ -103,6 +104,7 @@ def consultar(
         _assert_ident(col_quebra)
 
     want_rank = ranking or entity_id is None
+    filtros = filtro_fixo_params(cfg)
     linhas = _agregar(
         pg,
         table=table,
@@ -113,6 +115,7 @@ def consultar(
         col_quebra=col_quebra,
         quebra_valor=quebra_valor,
         with_rank=want_rank,
+        filtros_fixos=filtros,
     )
 
     ref_inicio = None
@@ -128,6 +131,7 @@ def consultar(
             col_quebra=col_quebra,
             quebra_valor=quebra_valor,
             with_rank=False,
+            filtros_fixos=filtros,
         )
         mapa = {(r.entity_id, r.quebra_id): r.valor for r in antigas}
         for r in linhas:
@@ -169,6 +173,7 @@ def _agregar(
     col_quebra: str | None,
     quebra_valor: str | None,
     with_rank: bool,
+    filtros_fixos: list[tuple[str, list[str]]] | None = None,
 ) -> list[LinhaResultado]:
     where = ["data = %s"]
     params: list[Any] = [data]
@@ -178,6 +183,10 @@ def _agregar(
     if col_quebra is not None and quebra_valor is not None:
         where.append(f"{col_quebra} = %s")
         params.append(quebra_valor)
+    for col, vals in filtros_fixos or []:
+        _assert_ident(col)
+        where.append(f"{col} = ANY(%s)")
+        params.append(vals)
 
     group = [col_entity]
     has_quebra_col = col_quebra is not None and quebra_valor is None

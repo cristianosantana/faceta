@@ -9,9 +9,31 @@ DIMENSAO_TO_COLUNA: dict[str, str] = {
     "familia_servico": "familia_servico_id",
     "servico": "servico_id",
     "forma_pagamento": "forma_pagamento_id",
-    "comissionado": "comissionado_id",
+    # comissionado_id polimórfico — um entity_type por categoria (filtro_fixo no contrato)
+    "comissao_vendedor": "comissionado_id",
+    "comissao_produtivo": "comissionado_id",
+    "comissao_concessionaria": "comissionado_id",
+    "comissao_indicador": "comissionado_id",
     "comissao_tipo": "comissao_tipo_id",
 }
+
+# Colunas permitidas em entity_cfg.filtro_fixo (valores sempre parametrizados)
+FILTRO_FIXO_COLUNAS: frozenset[str] = frozenset({"comissao_tipo_id"})
+
+# resolve_dim válidos (tabelas dim_* no Postgres)
+RESOLVE_DIM_TABLES: frozenset[str] = frozenset(
+    {
+        "dim_concessionaria",
+        "dim_departamento",
+        "dim_funcionario",
+        "dim_empresa",
+        "dim_familia_servico",
+        "dim_servico",
+        "dim_forma_pagamento",
+        "dim_comissao_tipo",
+        "dim_indicador",
+    }
+)
 
 GRANULARIDADE_SUFIXO: dict[str, str] = {
     "diario": "_diario",

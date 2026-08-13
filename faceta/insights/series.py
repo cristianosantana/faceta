@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 from faceta.db import SCHEMA
-from faceta.query.contract import coluna_dimensao, load_contrato, tabela_fato
+from faceta.query.contract import coluna_dimensao, filtro_fixo_params, load_contrato, tabela_fato
 from faceta.query.errors import ConsultaRejeitada
 from faceta.query.maps import GRANULARIDADE_SUFIXO
 
@@ -46,14 +46,24 @@ def carregar_series(
         if not ident.replace("_", "").isalnum():
             raise ConsultaRejeitada(f"ident inválido: {ident}")
 
+    where = ["TRUE"]
+    params: list = []
+    for fcol, vals in filtro_fixo_params(cfg):
+        if not fcol.replace("_", "").isalnum():
+            raise ConsultaRejeitada(f"filtro inválido: {fcol}")
+        where.append(f"{fcol} = ANY(%s)")
+        params.append(vals)
+    where_sql = " AND ".join(where)
+
     sql = f"""
     SELECT data, {col} AS entity_id, SUM({valor}) AS valor
     FROM {SCHEMA}.{table}
+    WHERE {where_sql}
     GROUP BY data, {col}
     ORDER BY {col}, data
     """
     with pg.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql, params)
         rows = cur.fetchall()
 
     by_id: dict[str, list[PontoSerie]] = {}

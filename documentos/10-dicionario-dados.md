@@ -11,7 +11,11 @@ Validado no live (`documentos/12-levantamento-fase-0.md`). Nomes reais no MySQL 
 | `concessionaria` | `concessionarias` | `id`, `nome` | CNPJ/razão social etc. não entram no fato |
 | `familia_servico` | `subgrupos_servicos` | `id`, `nome`, `grupo_servico_id` | **não** é `grupos_servicos`; via `servicos.subgrupo_servico_id` |
 | `familia_produto` | `subgrupos_produtos` | `id`, `nome`, `grupo_produto_id` | espelho para produtos |
-| `vendedor` / `produtivo` / `comissionado` | `funcionarios` | `id`, `nome` | IDs nos fatos apontam para cá |
+| `vendedor` / `produtivo` | `funcionarios` | `id`, `nome` | Papel via `funcionario_tipos` / `dim_funcionario_papel` |
+| `comissao_vendedor` / `comissao_produtivo` | `funcionarios` (via `comissionado_id` + filtro de tipo) | `id`, `nome` | `filtro_fixo.comissao_tipo_id` no contrato |
+| `comissao_concessionaria` | `concessionarias` | `id`, `nome` | mesmo `comissionado_id`, tipo CONCESSIONÁRIA |
+| `comissao_indicador` | `indicadores` | `id`, `nome` | tipos INDICADOR1+INDICADOR2 → `dim_indicador` |
+| `comissionado` (legado) | — | — | **removido**: FK polimórfica; use os `comissao_*` acima |
 | `forma_pagamento` | `caixa_tipos` | `id`, `nome` | via `caixas.caixa_tipo_id` |
 | `empresa` | `empresas` | `id`, `nome` | — |
 | `comissao_tipo` | `comissao_tipos` | `id`, `nome` | via `comissoes.comissao_tipo_id` |
@@ -32,6 +36,7 @@ Para ler fatos **sem** depender do MySQL em toda consulta, o ingest sincroniza c
 | `dim_forma_pagamento` | `caixa_tipos` |
 | `dim_empresa` | `empresas` |
 | `dim_comissao_tipo` | `comissao_tipos` |
+| `dim_indicador` | `indicadores` |
 
 Sync: `TRUNCATE` + `INSERT` a cada ingest (ou `python -m faceta.ingest --only-dims`). A origem MySQL continua canônica; o snapshot pode atrasar até o próximo sync.
 
@@ -79,7 +84,7 @@ Exemplos de pergunta → família certa:
 | Abertura / OS do período | “faturamento aberto hoje”, “quais vendedores abriram mais OS na semana” | `fato_os` → vendedor, concessionaria, departamento, empresa |
 | Produção / fechamento | “quanto o produtivo João fechou”, “serviços fechados no mês” | `fato_os_servico` → produtivo, servico, familia_servico |
 | Caixa / recebimento | “quanto entrou hoje”, “PIX da semana” | `fato_os_pagamento` → forma_pagamento |
-| Comissão gerada | “comissões do comissionado X no mês” | `fato_comissao` → comissionado, comissao_tipo |
+| Comissão gerada | “comissões do vendedor X”, “ranking de indicadores” | `fato_comissao` → comissao_vendedor / comissao_produtivo / comissao_concessionaria / comissao_indicador / comissao_tipo |
 
 O prompt do entendimento (`faceta/ask/understand.py`) e o `contrato.yaml` (entity_type → fato) precisam manter essa distinção — granularidade certa com família errada responde o período certo na métrica errada.
 

@@ -150,7 +150,7 @@ Cascata **sempre** soma do `*_diario` (não semana→mês). Se faltar dia no di�
 | Famílias de fato (`--familia`) | `os`, `servico`, `pagamento`, `comissao` (default: todas) |
 | Granularidades de cascata | `semanal`, `mensal`, `semestral`, `anual` (+ `diario` só na ingestão) |
 | Snapshots `dim_*` | departamento, concessionaria, familia_servico, familia_produto, servico, funcionario, **funcionario_papel**, forma_pagamento, empresa, comissao_tipo |
-| `entity_type` (contrato / ask / insights) | concessionaria, departamento, vendedor, produtivo, empresa, familia_servico, servico, forma_pagamento, comissionado, comissao_tipo |
+| `entity_type` (contrato / ask / insights) | concessionaria, departamento, vendedor, produtivo, empresa, familia_servico, servico, forma_pagamento, **comissao_vendedor**, **comissao_produtivo**, **comissao_concessionaria**, **comissao_indicador**, comissao_tipo |
 | Chave de período | `--periodo` = qualquer dia dentro da janela; o job normaliza para o início (segunda ISO / dia 1 / 1-jan\|1-jul / 1-jan) |
 
 ### Hipótese A — rotina diária (D−1)

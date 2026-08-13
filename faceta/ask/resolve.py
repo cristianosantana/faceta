@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from faceta.ask.understand import ParametrosPergunta
-from faceta.query.dims import DIM_TABLE, nomes_por_ids
+from faceta.query.dims import dim_table_for, nomes_por_ids
 from faceta.query.errors import ConsultaRejeitada
 from faceta.db import SCHEMA
 
 # Tipos em funcionario_tipos (via dim_funcionario_papel) por entity_type.
-# Inclui variantes vistas no live (ex. Freelancers como produtivo).
 ENTITY_TIPO_NOMES: dict[str, tuple[str, ...]] = {
     "vendedor": ("Vendas", "Supervisores - Vendas"),
     "produtivo": ("Produtivos", "Freelancers", "Prestadores de Serviço"),
 }
 
-# Fallback operacional: quem já aparece no fato no papel pedido (ex. Administrativo como vendedor_id).
 ENTITY_FATO_PAPEL: dict[str, tuple[str, str]] = {
     "vendedor": ("fato_os_diario", "vendedor_id"),
     "produtivo": ("fato_os_servico_diario", "produtivo_id"),
@@ -20,7 +18,7 @@ ENTITY_FATO_PAPEL: dict[str, tuple[str, str]] = {
 
 
 def resolver_nome(pg, dim: str, nome: str) -> str:
-    table = DIM_TABLE.get(dim)
+    table = dim_table_for(dim)
     if not table:
         raise ConsultaRejeitada(f"sem dim_* para resolver nome de '{dim}'")
     if not table.replace("_", "").isalnum():

@@ -59,14 +59,25 @@ Escolha o entity_type cuja família casa com a intenção temporal da pergunta:
    NÃO use para abertura de OS nem produção fechada.
 
 4) fato_comissao (geração da comissão) — data = DATE(comissoes.created_at)
-   entity_types: comissionado, comissao_tipo
-   Use para: comissões geradas no período (regra de negócio: geral costuma nascer no pagamento; produtivo no fechamento do item — o fato já materializa o created_at da comissão).
+   comissionado_id é polimórfico: NÃO use um "comissionado" genérico.
+   entity_types:
+   - comissao_vendedor — comissão de vendedor (tipo VENDEDOR)
+   - comissao_produtivo — comissão de produtivo (tipo PRODUTIVO)
+   - comissao_concessionaria — comissão da concessionária
+   - comissao_indicador — comissão de indicador externo (INDICADOR1/2)
+   - comissao_tipo — total por categoria de tipo (sem filtrar o quem)
+   Use para: "comissão do vendedor X", "ranking de indicadores por comissão", "quanto de comissão de concessionária".
 
 Heurísticas de linguagem:
 - "entrou" / "recebido" / "pago" / "caixa" / "PIX" / "cartão" → forma_pagamento (pagamento)
 - "fechou" / "produção" / "produtivo" / "serviço executado" → servico | familia_servico | produtivo
+  (se a pergunta for sobre *comissão* do produtivo → comissao_produtivo)
 - "abriu" / "criou" / "OS do dia" / "faturamento aberto" / ranking de vendedor por abertura → vendedor | concessionaria | departamento | empresa
-- "comissão" / "comissionado" → comissionado | comissao_tipo
+- "comissão" + vendedor → comissao_vendedor
+- "comissão" + produtivo → comissao_produtivo
+- "comissão" + concessionária → comissao_concessionaria
+- "comissão" + indicador → comissao_indicador
+- "comissão" só por tipo/categoria (sem quem) → comissao_tipo
 """
 
 

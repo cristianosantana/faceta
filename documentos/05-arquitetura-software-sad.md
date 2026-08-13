@@ -173,8 +173,11 @@ entity_types:
   familia_servico: { fato: fato_os_servico, coluna: familia_servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, servico, produtivo] }
   servico:        { fato: fato_os_servico, coluna: servico_id, valor: valor_atribuido, quebras_validas: [concessionaria, departamento, familia_servico, produtivo] }
   forma_pagamento: { fato: fato_os_pagamento, coluna: forma_pagamento_id, valor: valor_pago, quebras_validas: [concessionaria, departamento] }
-  comissionado:   { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, quebras_validas: [comissao_tipo] }
-  comissao_tipo:  { fato: fato_comissao, coluna: comissao_tipo_id, valor: valor_comissao, quebras_validas: [comissionado] }
+  comissao_vendedor: { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, filtro_fixo: {comissao_tipo_id: ["2"]}, resolve_dim: dim_funcionario }
+  comissao_produtivo: { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, filtro_fixo: {comissao_tipo_id: ["3"]}, resolve_dim: dim_funcionario }
+  comissao_concessionaria: { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, filtro_fixo: {comissao_tipo_id: ["1"]}, resolve_dim: dim_concessionaria }
+  comissao_indicador: { fato: fato_comissao, coluna: comissionado_id, valor: valor_comissao, filtro_fixo: {comissao_tipo_id: ["4","5"]}, resolve_dim: dim_indicador }
+  comissao_tipo:  { fato: fato_comissao, coluna: comissao_tipo_id, valor: valor_comissao, quebras_validas: [] }
 ```
 Arquivo vivo: `contrato.yaml`. CLI: `python -m faceta.query` — ver `15-fase3-consulta.md`.  
 Note que `servico` e `forma_pagamento` **não aparecem como quebra válida um do outro** — reflete a limitação da seção 2 (sem itemização cruzada na origem, essa combinação não existe).

@@ -40,16 +40,50 @@ entity_types:
     coluna: forma_pagamento_id
     valor: valor_pago
     quebras_validas: [concessionaria, departamento]
-  comissionado:
+
+  # comissionado_id é FK polimórfica (discriminada por comissao_tipo_id):
+  # 1=CONCESSIONÁRIA → dim_concessionaria
+  # 2=VENDEDOR → dim_funcionario
+  # 3=PRODUTIVO → dim_funcionario
+  # 4=INDICADOR1, 5=INDICADOR2 → dim_indicador (MySQL indicadores)
+  comissao_vendedor:
     fato: fato_comissao
     coluna: comissionado_id
     valor: valor_comissao
-    quebras_validas: [comissao_tipo]
+    filtro_fixo:
+      comissao_tipo_id: ["2"]
+    resolve_dim: dim_funcionario
+    quebras_validas: []
+  comissao_produtivo:
+    fato: fato_comissao
+    coluna: comissionado_id
+    valor: valor_comissao
+    filtro_fixo:
+      comissao_tipo_id: ["3"]
+    resolve_dim: dim_funcionario
+    quebras_validas: []
+  comissao_concessionaria:
+    fato: fato_comissao
+    coluna: comissionado_id
+    valor: valor_comissao
+    filtro_fixo:
+      comissao_tipo_id: ["1"]
+    resolve_dim: dim_concessionaria
+    quebras_validas: []
+  comissao_indicador:
+    fato: fato_comissao
+    coluna: comissionado_id
+    valor: valor_comissao
+    filtro_fixo:
+      comissao_tipo_id: ["4", "5"]
+    resolve_dim: dim_indicador
+    quebras_validas: []
+  # Total por categoria de comissão (sem filtrar o "quem")
   comissao_tipo:
     fato: fato_comissao
     coluna: comissao_tipo_id
     valor: valor_comissao
-    quebras_validas: [comissionado]
+    quebras_validas: []
 
 granularidades_validas: [diario, semanal, mensal, semestral, anual]
 comparacoes_validas: [vs_periodo_anterior, vs_mesmo_periodo_ano_anterior]

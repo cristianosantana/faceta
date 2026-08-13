@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from faceta.db import SCHEMA
-from faceta.query.engine import LinhaResultado, ResultadoConsulta
+from faceta.query.contract import load_contrato
+from faceta.query.engine import ResultadoConsulta
 from faceta.query.errors import ConsultaRejeitada
 
-# entity_type / quebra → tabela dim_*
+# Fallback quando o contrato não define resolve_dim
 DIM_TABLE: dict[str, str] = {
     "concessionaria": "dim_concessionaria",
     "departamento": "dim_departamento",
@@ -14,7 +15,10 @@ DIM_TABLE: dict[str, str] = {
     "familia_servico": "dim_familia_servico",
     "servico": "dim_servico",
     "forma_pagamento": "dim_forma_pagamento",
-    "comissionado": "dim_funcionario",
+    "comissao_vendedor": "dim_funcionario",
+    "comissao_produtivo": "dim_funcionario",
+    "comissao_concessionaria": "dim_concessionaria",
+    "comissao_indicador": "dim_indicador",
     "comissao_tipo": "dim_comissao_tipo",
 }
 
@@ -24,11 +28,21 @@ def _assert_ident(name: str) -> None:
         raise ConsultaRejeitada(f"identificador inválido: {name!r}")
 
 
+def dim_table_for(dim: str, contrato: dict | None = None) -> str | None:
+    """Tabela dim_* para entity_type/quebra: resolve_dim do contrato ou DIM_TABLE."""
+    contrato = contrato or load_contrato()
+    cfg = (contrato.get("entity_types") or {}).get(dim) or {}
+    rd = cfg.get("resolve_dim")
+    if rd:
+        return str(rd)
+    return DIM_TABLE.get(dim)
+
+
 def nomes_por_ids(pg, dim: str, ids: list[str]) -> dict[str, str]:
     """Resolve id → nome em dim_* para qualquer dimensão do contrato."""
     if not ids:
         return {}
-    table = DIM_TABLE.get(dim)
+    table = dim_table_for(dim)
     if not table:
         return {}
     _assert_ident(table)
@@ -49,9 +63,6 @@ def enriquecer_resultado(pg, resultado: ResultadoConsulta) -> ResultadoConsulta:
     mapa_e = nomes_por_ids(pg, resultado.entity_type, entity_ids)
 
     mapa_q: dict[str, str] = {}
-    # quebra_id presente → precisa saber o tipo de quebra; vem do contrato via campo opcional
-    # ResultadoConsulta não guarda quebra type — inferimos se alguma linha tem quebra_id
-    # O caller deve passar quebra via atributo; adicionamos em ResultadoConsulta
     quebra = getattr(resultado, "quebra", None)
     if quebra:
         qids = [L.quebra_id for L in resultado.linhas if L.quebra_id is not None]

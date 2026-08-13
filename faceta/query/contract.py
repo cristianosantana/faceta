@@ -11,7 +11,9 @@ from faceta.query.maps import (
     COMPARACOES,
     DIMENSAO_TO_COLUNA,
     FATO_BASES,
+    FILTRO_FIXO_COLUNAS,
     GRANULARIDADE_SUFIXO,
+    RESOLVE_DIM_TABLES,
     VALOR_COLUNAS,
 )
 
@@ -53,6 +55,28 @@ def _validar_estrutura(contrato: dict[str, Any]) -> None:
                 raise ConsultaRejeitada("contrato inválido: servico × forma_pagamento")
             if {nome, q} == {"familia_servico", "forma_pagamento"}:
                 raise ConsultaRejeitada("contrato inválido: familia_servico × forma_pagamento")
+
+        ff = cfg.get("filtro_fixo")
+        if ff is not None:
+            if not isinstance(ff, dict) or not ff:
+                raise ConsultaRejeitada(f"filtro_fixo inválido para {nome}")
+            for col, vals in ff.items():
+                if col not in FILTRO_FIXO_COLUNAS:
+                    raise ConsultaRejeitada(
+                        f"filtro_fixo coluna '{col}' de {nome} fora da allowlist"
+                    )
+                if not isinstance(vals, list) or not vals:
+                    raise ConsultaRejeitada(
+                        f"filtro_fixo.{col} de {nome} deve ser lista não vazia de valores"
+                    )
+                for v in vals:
+                    if v is None or str(v).strip() == "":
+                        raise ConsultaRejeitada(f"filtro_fixo.{col} de {nome} tem valor vazio")
+
+        rd = cfg.get("resolve_dim")
+        if rd is not None:
+            if rd not in RESOLVE_DIM_TABLES:
+                raise ConsultaRejeitada(f"resolve_dim inválido para {nome}: {rd}")
 
 
 def resolver_entity(contrato: dict[str, Any], entity_type: str) -> dict[str, Any]:
@@ -109,3 +133,14 @@ def coluna_dimensao(nome: str) -> str:
     if nome not in DIMENSAO_TO_COLUNA:
         raise ConsultaRejeitada(f"dimensão fora do mapa: {nome}")
     return DIMENSAO_TO_COLUNA[nome]
+
+
+def filtro_fixo_params(entity_cfg: dict[str, Any]) -> list[tuple[str, list[str]]]:
+    """Retorna [(coluna, [valores])] do filtro_fixo, já normalizado em strings."""
+    ff = entity_cfg.get("filtro_fixo") or {}
+    out: list[tuple[str, list[str]]] = []
+    for col, vals in ff.items():
+        if col not in FILTRO_FIXO_COLUNAS:
+            raise ConsultaRejeitada(f"filtro_fixo coluna fora da allowlist: {col}")
+        out.append((col, [str(v) for v in vals]))
+    return out
